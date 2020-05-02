@@ -54,7 +54,10 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
           ),
           initialRoute: initialRoute,
           routes: {
-            '/': (context) => HomePage(title: 'Medicine Reminder'),
+            '/': (context) => HomePage(
+              title: 'Medicine Reminder',
+              db: dbSnapshot.data,
+            ),
             '/add': (context) => DetailsPage(db: dbSnapshot.data),
             '/init': (context) => InitPage(),
           },

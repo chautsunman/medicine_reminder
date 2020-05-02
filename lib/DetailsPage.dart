@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:sqflite/sqflite.dart';
 
+import 'Medication.dart';
+
 class DetailsPage extends StatefulWidget {
   final Database db;
 
@@ -14,8 +16,14 @@ class DetailsPage extends StatefulWidget {
 class _DetailsPageState extends State<DetailsPage> {
   final nameController = TextEditingController();
 
-  onSaveBtnPressed(context) {
+  onSaveBtnPressed(context) async {
     print('onSaveBtnPressed');
+
+    final Medication medication = Medication(
+      name: nameController.text
+    );
+
+    await widget.db.insert('medication', medication.toMap());
 
     Navigator.pop(context);
   }
