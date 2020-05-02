@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'package:path/path.dart';
 
 import 'package:sqflite/sqflite.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'HomePage.dart';
 import 'DetailsPage.dart';
@@ -18,7 +21,7 @@ class MedicineReminderApp extends StatefulWidget {
 }
 
 class _MedicineReminderAppState extends State<MedicineReminderApp> {
-  Future<Database> dbFuture;
+  Future<List<dynamic>> initFutures;
 
   @override
   void initState() {
@@ -29,24 +32,50 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
 
   init() async {
     final dbPath = join(await getDatabasesPath(), 'medication.db');
+    final dbFuture = openDatabase(
+      dbPath,
+      onCreate: (db, version) async {
+        var batch = db.batch();
+        batch.execute('CREATE TABLE medication (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(255) NOT NULL, photo_file_name VARCHAR(255))');
+        await batch.commit();
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion == 1) {
+          var batch = db.batch();
+          batch.execute('ALTER TABLE medication ALTER COLUMN name VARCHAR(255) NOT NULL');
+          batch.execute('ALTER TABLE medication ADD photo_file_name VARCHAR(255)');
+          await batch.commit();
+        }
+      },
+      onOpen: (db) {
+        print('DB opened.');
+      },
+      version: 2,
+    );
+
+    final localPathFuture = getApplicationDocumentsDirectory().then((dir) => dir.path);
+
+    final photoPathFuture = localPathFuture.then((localPath) async {
+      final photoPath = '$localPath/photos';
+      final photoDir = Directory(photoPath);
+      final photoDirExists = await photoDir.exists();
+      if (!photoDirExists) {
+        photoDir.create();
+      }
+      return photoPath;
+    });
 
     setState(() {
-      dbFuture = openDatabase(
-        dbPath,
-        onCreate: (db, version) async {
-          await db.execute('CREATE TABLE medication (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(255))');
-        },
-        version: 1,
-      );
+      initFutures = Future.wait([dbFuture, photoPathFuture]);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: dbFuture,
-      builder: (context, dbSnapshot) {
-        final initialRoute = (dbSnapshot.hasData) ? '/' : '/init';
+      future: initFutures,
+      builder: (context, initFuturesSnapshot) {
+        final initialRoute = (initFuturesSnapshot.hasData) ? '/' : '/init';
 
         return MaterialApp(
           key: Key(initialRoute),
@@ -56,13 +85,13 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
           ),
           initialRoute: initialRoute,
           onGenerateRoute: (settings) {
-            if (dbSnapshot.hasData) {
+            if (initFuturesSnapshot.hasData) {
               if (settings.name == '/') {
                 return MaterialPageRoute(
                   builder: (context) {
                     return HomePage(
                       title: 'Medicine Reminder',
-                      db: dbSnapshot.data,
+                      db: initFuturesSnapshot.data[0],
                     );
                   },
                 );
@@ -73,7 +102,8 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
 
                     return DetailsPage(
                       medication: medication,
-                      db: dbSnapshot.data,
+                      db: initFuturesSnapshot.data[0],
+                      photoPath: initFuturesSnapshot.data[1],
                     );
                   },
                 );

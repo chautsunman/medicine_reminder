@@ -23,7 +23,8 @@ class _HomePageState extends State<HomePage> {
     final List<Medication> medications = List.generate(medicationMaps.length, (idx) {
       return Medication(
         id: medicationMaps[idx]['id'],
-        name: medicationMaps[idx]['name']
+        name: medicationMaps[idx]['name'],
+        photoFileName: medicationMaps[idx]['photo_file_name']
       );
     });
     setState(() {
