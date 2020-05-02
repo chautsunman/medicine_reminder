@@ -22,6 +22,7 @@ class _HomePageState extends State<HomePage> {
     final List<Map<String, dynamic>> medicationMaps = await widget.db.query('medication');
     final List<Medication> medications = List.generate(medicationMaps.length, (idx) {
       return Medication(
+        id: medicationMaps[idx]['id'],
         name: medicationMaps[idx]['name']
       );
     });
@@ -31,7 +32,21 @@ class _HomePageState extends State<HomePage> {
   }
 
   onAdd() async {
-    await Navigator.pushNamed(context, '/add');
+    await Navigator.pushNamed(
+      context,
+      '/details',
+      arguments: null
+    );
+
+    getMedications();
+  }
+
+  onMedicationTap(idx) async {
+    await Navigator.pushNamed(
+      context,
+      '/details',
+      arguments: medications[idx]
+    );
 
     getMedications();
   }
@@ -57,6 +72,9 @@ class _HomePageState extends State<HomePage> {
           itemBuilder: (context, idx) {
             return ListTile(
               title: Text(medications[idx].name),
+              onTap: () {
+                onMedicationTap(idx);
+              },
             );
           },
         ),

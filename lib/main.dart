@@ -8,6 +8,8 @@ import 'HomePage.dart';
 import 'DetailsPage.dart';
 import 'InitPage.dart';
 
+import 'Medication.dart';
+
 void main() => runApp(MedicineReminderApp());
 
 class MedicineReminderApp extends StatefulWidget {
@@ -53,13 +55,36 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
             primarySwatch: Colors.purple,
           ),
           initialRoute: initialRoute,
-          routes: {
-            '/': (context) => HomePage(
-              title: 'Medicine Reminder',
-              db: dbSnapshot.data,
-            ),
-            '/add': (context) => DetailsPage(db: dbSnapshot.data),
-            '/init': (context) => InitPage(),
+          onGenerateRoute: (settings) {
+            if (dbSnapshot.hasData) {
+              if (settings.name == '/') {
+                return MaterialPageRoute(
+                  builder: (context) {
+                    return HomePage(
+                      title: 'Medicine Reminder',
+                      db: dbSnapshot.data,
+                    );
+                  },
+                );
+              } else if (settings.name == '/details') {
+                return MaterialPageRoute(
+                  builder: (context) {
+                    final Medication medication = settings.arguments;
+
+                    return DetailsPage(
+                      medication: medication,
+                      db: dbSnapshot.data,
+                    );
+                  },
+                );
+              }
+            }
+
+            return MaterialPageRoute(
+              builder: (context) {
+                return InitPage();
+              },
+            );
           },
         );
       },

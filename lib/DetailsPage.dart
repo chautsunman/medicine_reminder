@@ -5,9 +5,11 @@ import 'package:sqflite/sqflite.dart';
 import 'Medication.dart';
 
 class DetailsPage extends StatefulWidget {
+  final Medication medication;
+
   final Database db;
 
-  DetailsPage({Key key, this.db}) : super(key: key);
+  DetailsPage({Key key, this.medication, this.db}) : super(key: key);
 
   @override
   _DetailsPageState createState() => _DetailsPageState();
@@ -23,9 +25,34 @@ class _DetailsPageState extends State<DetailsPage> {
       name: nameController.text
     );
 
-    await widget.db.insert('medication', medication.toMap());
+    if (widget.medication == null && widget.medication.id != null) {
+      await widget.db.insert('medication', medication.toMap());
+
+      print('Record inserted.');
+    } else {
+      medication.id = widget.medication.id;
+      await widget.db.update(
+        'medication',
+        medication.toMap(),
+        where: 'id = ?',
+        whereArgs: [medication.id]
+      );
+
+      print('Record updated.');
+    }
 
     Navigator.pop(context);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.medication != null && widget.medication.id != null) {
+      print('Editing medication ${widget.medication.id}.');
+
+      nameController.text = widget.medication.name;
+    }
   }
 
   @override

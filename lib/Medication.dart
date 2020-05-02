@@ -1,11 +1,16 @@
 class Medication {
+  int id;
   final String name;
 
-  Medication({this.name});
+  Medication({this.id, this.name});
 
   Map<String, dynamic> toMap() {
-    return {
+    Map<String, dynamic> map = {
       'name': name
     };
+    if (id != null) {
+      map['id'] = id;
+    }
+    return map;
   }
 }
