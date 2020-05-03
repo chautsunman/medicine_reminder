@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:sqflite/sqflite.dart';
 
-import 'Medication.dart';
+import 'obj/MedicationObj.dart';
 
 class HomePage extends StatefulWidget {
   final String title;
@@ -16,12 +16,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Medication> medications;
+  List<MedicationObj> medications;
 
   getMedications() async {
     final List<Map<String, dynamic>> medicationMaps = await widget.db.query('medication');
-    final List<Medication> medications = List.generate(medicationMaps.length, (idx) {
-      return Medication(
+    final List<MedicationObj> medications = List.generate(medicationMaps.length, (idx) {
+      return MedicationObj(
         id: medicationMaps[idx]['id'],
         name: medicationMaps[idx]['name'],
         photoFileName: medicationMaps[idx]['photo_file_name']

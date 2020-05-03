@@ -1,9 +1,9 @@
-class Medication {
+class MedicationObj {
   int id;
   final String name;
   String photoFileName;
 
-  Medication({this.id, this.name, this.photoFileName});
+  MedicationObj({this.id, this.name, this.photoFileName});
 
   Map<String, dynamic> toMap() {
     Map<String, dynamic> map = {

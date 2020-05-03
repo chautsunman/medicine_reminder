@@ -11,7 +11,7 @@ import 'HomePage.dart';
 import 'DetailsPage.dart';
 import 'InitPage.dart';
 
-import 'Medication.dart';
+import 'obj/MedicationObj.dart';
 
 void main() => runApp(MedicineReminderApp());
 
@@ -36,21 +36,49 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
       dbPath,
       onCreate: (db, version) async {
         var batch = db.batch();
-        batch.execute('CREATE TABLE medication (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(255) NOT NULL, photo_file_name VARCHAR(255))');
+        batch.execute('''
+          CREATE TABLE medication (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(255) NOT NULL,
+            photo_file_name VARCHAR(255)
+          )
+        ''');
+        batch.execute('''
+          CREATE TABLE schedule (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            medication_id INTEGER,
+            schedule_day INTEGER,
+            schedule_time INTEGER,
+            FOREIGH KEY(medication_id) REFERENCES medication(id)
+          )
+        ''');
         await batch.commit();
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion == 1) {
+        if (oldVersion <= 1) {
           var batch = db.batch();
           batch.execute('ALTER TABLE medication ALTER COLUMN name VARCHAR(255) NOT NULL');
           batch.execute('ALTER TABLE medication ADD photo_file_name VARCHAR(255)');
+          await batch.commit();
+        }
+        if (oldVersion <= 2) {
+          var batch = db.batch();
+          batch.execute('''
+            CREATE TABLE schedule (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              medication_id INTEGER,
+              schedule_day INTEGER,
+              schedule_time INTEGER,
+              FOREIGN KEY(medication_id) REFERENCES medication(id)
+            )
+          ''');
           await batch.commit();
         }
       },
       onOpen: (db) {
         print('DB opened.');
       },
-      version: 2,
+      version: 3,
     );
 
     final localPathFuture = getApplicationDocumentsDirectory().then((dir) => dir.path);
@@ -98,7 +126,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
               } else if (settings.name == '/details') {
                 return MaterialPageRoute(
                   builder: (context) {
-                    final Medication medication = settings.arguments;
+                    final MedicationObj medication = settings.arguments;
 
                     return DetailsPage(
                       medication: medication,
