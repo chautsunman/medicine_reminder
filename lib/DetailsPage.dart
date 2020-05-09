@@ -52,7 +52,7 @@ class _DetailsPageState extends State<DetailsPage> {
     }
   }
 
-  Future _saveSchedule(batch) async {
+  Future _saveSchedule(schedules, batch) async {
     schedules.forEach((schedule) {
       if (schedule.id == null) {
         batch.insert('schedule', schedule.toMap());
@@ -85,7 +85,7 @@ class _DetailsPageState extends State<DetailsPage> {
     await widget.db.transaction((txn) async {
       var batch = txn.batch();
       await _saveMedication(medication, batch);
-      await _saveSchedule(batch);
+      await _saveSchedule(schedules, batch);
       batch.commit(noResult: true);
     });
     print('Saved.');
@@ -109,21 +109,48 @@ class _DetailsPageState extends State<DetailsPage> {
 
   addSchedule() {
     setState(() {
-      schedules.add(ScheduleObj());
+      schedules.add(ScheduleObj(medicationId: widget.medication.id));
     });
+  }
+
+  Future<File> _initEditGetImgFile(medication) async {
+    if (medication.photoFileName != null) {
+      final imgFile = File('${widget.photoPath}/${medication.photoFileName}');
+      final imgFileExists = await imgFile.exists();
+      if (imgFileExists) {
+        return imgFile;
+      }
+      return null;
+    }
+    return null;
+  }
+
+  Future<List<ScheduleObj>> _initEditGetSchedules(medication) async {
+    final List<Map<String, dynamic>> scheduleMaps = await widget.db.query(
+      'schedule',
+      where: 'medication_id = ?',
+      whereArgs: [medication.id],
+    );
+    final List<ScheduleObj> schedules = scheduleMaps.map((map) {
+      return ScheduleObj.fromDbMap(map);
+    }).toList();
+    return schedules;
   }
 
   initEdit() async {
     nameController.text = widget.medication.name;
-    if (widget.medication.photoFileName != null) {
-      final imgFile = File('${widget.photoPath}/${widget.medication.photoFileName}');
-      final imgFileExists = await imgFile.exists();
-      if (imgFileExists) {
-        setState(() {
-          this.imgFile = imgFile;
-        });
+    final List<dynamic> initRes = await Future.wait([
+      _initEditGetImgFile(widget.medication),
+      _initEditGetSchedules(widget.medication),
+    ]);
+    setState(() {
+      if (initRes[0] != null) {
+        imgFile = initRes[0];
       }
-    }
+      if (initRes[1] != null) {
+        schedules = initRes[1];
+      }
+    });
   }
 
   @override
@@ -181,7 +208,7 @@ class _DetailsPageState extends State<DetailsPage> {
         ],
       ),
       body: Container(
-        child: Column(
+        child: ListView(
           children: <Widget>[
             TextField(
               controller: nameController,
@@ -197,6 +224,13 @@ class _DetailsPageState extends State<DetailsPage> {
               margin: EdgeInsets.only(top: 8),
               child: Column(
                 children: scheduleComps,
+              ),
+            ),
+            Container(
+              margin: EdgeInsets.only(top: 8),
+              child: FlatButton(
+                child: Text('Add'),
+                onPressed: addSchedule,
               ),
             ),
           ],

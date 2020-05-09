@@ -64,7 +64,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
         if (oldVersion <= 2) {
           var batch = db.batch();
           batch.execute('''
-            CREATE TABLE schedule (
+            CREATE TABLE IF NOT EXISTS schedule (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               medication_id INTEGER,
               schedule_day INTEGER,

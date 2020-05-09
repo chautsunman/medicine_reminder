@@ -20,13 +20,9 @@ class _HomePageState extends State<HomePage> {
 
   getMedications() async {
     final List<Map<String, dynamic>> medicationMaps = await widget.db.query('medication');
-    final List<MedicationObj> medications = List.generate(medicationMaps.length, (idx) {
-      return MedicationObj(
-        id: medicationMaps[idx]['id'],
-        name: medicationMaps[idx]['name'],
-        photoFileName: medicationMaps[idx]['photo_file_name']
-      );
-    });
+    final List<MedicationObj> medications = medicationMaps.map((map) {
+      return MedicationObj.fromDbMap(map);
+    }).toList();
     setState(() {
       this.medications = medications;
     });

@@ -13,10 +13,55 @@ class Schedule extends StatelessWidget {
     @required this.onScheduleChanged
   }) : super(key: key);
 
+  onDayClick(day) {
+    List<bool> parsedDays = schedule.getDays();
+    parsedDays[day] = !parsedDays[day];
+    final ScheduleObj newSchedule = ScheduleObj.copy(schedule);
+    newSchedule.setDays(parsedDays);
+    onScheduleChanged(newSchedule);
+  }
+
+  onPickTime(context) async {
+    final DateTime scheduleTimeDateTime = schedule.getTime();
+    TimeOfDay selectedTime = await showTimePicker(
+      initialTime: (scheduleTimeDateTime != null) ? TimeOfDay.fromDateTime(scheduleTimeDateTime) : TimeOfDay.now(),
+      context: context,
+    );
+    final ScheduleObj newSchedule = ScheduleObj.copy(schedule);
+    DateTime newTime = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+    newTime = newTime.add(Duration(hours: selectedTime.hour, minutes: selectedTime.minute));
+    newSchedule.setTime(newTime);
+    onScheduleChanged(newSchedule);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final List<bool> parsedDays = schedule.getDays();
+    final DateTime timeDateTime = schedule.getTime();
+    final TimeOfDay timeTimeOfDay = (timeDateTime != null) ? TimeOfDay.fromDateTime(timeDateTime) : null;
+    final String timeStr = (timeTimeOfDay != null) ? timeTimeOfDay.format(context) : '';
 
+    return Container(
+      child: Column(
+        children: <Widget>[
+          ButtonBar(
+            children: List.generate(7, (idx) {
+              return OutlineButton(
+                child: Text('$idx ${parsedDays[idx]}'),
+                onPressed: () {
+                  onDayClick(idx);
+                },
+              );
+            }),
+          ),
+          OutlineButton(
+            child: Text('Time: $timeStr'),
+            onPressed: () {
+              onPickTime(context);
+            },
+          ),
+        ],
+      ),
     );
   }
 }
