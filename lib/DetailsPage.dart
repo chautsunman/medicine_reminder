@@ -90,7 +90,7 @@ class _DetailsPageState extends State<DetailsPage> {
     });
     print('Saved.');
 
-    Navigator.pop(context);
+    Navigator.pop(context, true);
   }
 
   takePhoto() async {

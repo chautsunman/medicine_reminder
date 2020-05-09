@@ -6,6 +6,7 @@ import 'package:path/path.dart';
 
 import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'HomePage.dart';
 import 'DetailsPage.dart';
@@ -28,6 +29,19 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
     super.initState();
 
     init();
+  }
+
+  Future<FlutterLocalNotificationsPlugin> initNotification() async {
+    FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    var initializationSettingsAndroid = AndroidInitializationSettings('icon');
+    // var initializationSettingsIOS = IOSInitializationSettings(onDidReceiveLocalNotification: onDidReceiveLocalNotification);
+    var initializationSettings = InitializationSettings(initializationSettingsAndroid, null);
+    final bool initRes = await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    if (initRes) {
+      print('Notifications initialized.');
+      return flutterLocalNotificationsPlugin;
+    }
+    return null;
   }
 
   init() async {
@@ -94,7 +108,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
     });
 
     setState(() {
-      initFutures = Future.wait([dbFuture, photoPathFuture]);
+      initFutures = Future.wait([dbFuture, photoPathFuture, initNotification()]);
     });
   }
 
@@ -103,7 +117,12 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
     return FutureBuilder(
       future: initFutures,
       builder: (context, initFuturesSnapshot) {
-        final initialRoute = (initFuturesSnapshot.hasData) ? '/' : '/init';
+        String initialRoute = (initFuturesSnapshot.hasData) ? '/' : '/init';
+        if (initFuturesSnapshot.hasData) {
+          if (initFuturesSnapshot.data[2] == null) {
+            initialRoute = '/init';
+          }
+        }
 
         return MaterialApp(
           key: Key(initialRoute),
@@ -120,6 +139,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
                     return HomePage(
                       title: 'Medicine Reminder',
                       db: initFuturesSnapshot.data[0],
+                      notifications: initFuturesSnapshot.data[2]
                     );
                   },
                 );

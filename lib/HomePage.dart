@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:sqflite/sqflite.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'obj/MedicationObj.dart';
 
@@ -8,8 +9,9 @@ class HomePage extends StatefulWidget {
   final String title;
 
   final Database db;
+  final FlutterLocalNotificationsPlugin notifications;
 
-  HomePage({Key key, this.title, this.db}) : super(key: key);
+  HomePage({Key key, this.title, this.db, this.notifications}) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -28,24 +30,51 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  refreshNotifications() async {
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'medication',
+      'Medication',
+      'Medication Reminder',
+      importance: Importance.Max,
+      priority: Priority.High,
+    );
+    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
+    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    await widget.notifications.show(
+      0,
+      'Time to take medication.',
+      'Time to take medication.',
+      platformChannelSpecifics,
+    );
+  }
+
+  onSaved() async {
+    refreshNotifications();
+    getMedications();
+  }
+
   onAdd() async {
-    await Navigator.pushNamed(
+    final res = await Navigator.pushNamed(
       context,
       '/details',
       arguments: null
     );
 
-    getMedications();
+    if (res != null && res) {
+      onSaved();
+    }
   }
 
   onMedicationTap(idx) async {
-    await Navigator.pushNamed(
+    final res = await Navigator.pushNamed(
       context,
       '/details',
       arguments: medications[idx]
     );
 
-    getMedications();
+    if (res != null && res) {
+      onSaved();
+    }
   }
 
   @override
