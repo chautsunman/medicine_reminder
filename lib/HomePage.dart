@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'Notification.dart';
+
 import 'obj/MedicationObj.dart';
+import 'obj/ScheduleObj.dart';
 
 class HomePage extends StatefulWidget {
   final String title;
@@ -31,25 +34,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   refreshNotifications() async {
-    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'medication',
-      'Medication',
-      'Medication Reminder',
-      importance: Importance.Max,
-      priority: Priority.High,
+    final List<Map<String, dynamic>> scheduleRecords = await widget.db.rawQuery(
+      'SELECT * FROM schedule INNER JOIN medication ON medication.id = schedule.medication_id'
     );
-    var iOSPlatformChannelSpecifics = IOSNotificationDetails();
-    var platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
-    await widget.notifications.show(
-      0,
-      'Time to take medication.',
-      'Time to take medication.',
-      platformChannelSpecifics,
-    );
+
+    final Map<ScheduleKey, List<Map<String, dynamic>>> groupedSchedules = groupSchedules(scheduleRecords);
+
+    await clearNotifications(widget.notifications);
+
+    return addNotifications(widget.notifications, groupedSchedules);
   }
 
   onSaved() async {
-    refreshNotifications();
+    await refreshNotifications();
+
     getMedications();
   }
 

@@ -44,35 +44,66 @@ class ScheduleObj {
   );
 
   List<bool> getDays() {
-    List<bool> parsedDays = List.generate(7, (i) {return false;});
-    int dayTemp = (scheduleDay != null) ? scheduleDay : 0;
-    for (int i = 6; i >= 0; i--) {
-      if (dayTemp >= pow(2, i)) {
-        parsedDays[i] = true;
-        dayTemp -= pow(2, i);
-      }
-    }
-    return parsedDays;
+    return parseDay(scheduleDay);
   }
 
   setDays(List<bool> days) {
-    int dayTemp = 0;
-    for (int i = 0; i < days.length; i++) {
-      if (days[i]) {
-        dayTemp += pow(2, i);
-      }
-    }
-    scheduleDay = dayTemp;
+    scheduleDay = calculateDay(days);
   }
 
   DateTime getTime() {
-    if (scheduleTime != null) {
-      return DateTime.fromMillisecondsSinceEpoch(scheduleTime, isUtc: true);
-    }
-    return null;
+    return parseTime(scheduleTime);
   }
 
   setTime(DateTime time) {
-    scheduleTime = time.millisecondsSinceEpoch;
+    scheduleTime = calculateTime(time);
   }
+
+  ScheduleKey getScheduleKey() {
+    return ScheduleKey(scheduleDay, scheduleTime);
+  }
+}
+
+class ScheduleKey {
+  final int day;
+  final int time;
+
+  ScheduleKey(this.day, this.time);
+
+  bool valid() {
+    return day != null && time != null;
+  }
+}
+
+List<bool> parseDay(int days) {
+  List<bool> parsedDays = List.generate(7, (i) {return false;});
+  int dayTemp = (days != null) ? days : 0;
+  for (int i = 6; i >= 0; i--) {
+    if (dayTemp >= pow(2, i)) {
+      parsedDays[i] = true;
+      dayTemp -= pow(2, i);
+    }
+  }
+  return parsedDays;
+}
+
+int calculateDay(List<bool> days) {
+  int dayTemp = 0;
+  for (int i = 0; i < days.length; i++) {
+    if (days[i]) {
+      dayTemp += pow(2, i);
+    }
+  }
+  return dayTemp;
+}
+
+DateTime parseTime(int time) {
+  if (time != null) {
+    return DateTime.fromMillisecondsSinceEpoch(time, isUtc: true);
+  }
+  return null;
+}
+
+int calculateTime(DateTime time) {
+  return time.millisecondsSinceEpoch;
 }

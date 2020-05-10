@@ -39,7 +39,7 @@ class _DetailsPageState extends State<DetailsPage> {
   }
 
   Future _saveMedication(MedicationObj medication, batch) async {
-    if (widget.medication == null && widget.medication.id != null) {
+    if (widget.medication == null || widget.medication.id == null) {
       await batch.insert('medication', medication.toMap());
     } else {
       medication.id = widget.medication.id;
