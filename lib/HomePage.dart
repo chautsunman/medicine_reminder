@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:sqflite/sqflite.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-
-import 'Notification.dart';
+import 'NotificationHelper.dart';
+import 'Helper.dart';
 
 import 'obj/MedicationObj.dart';
 import 'obj/ScheduleObj.dart';
@@ -11,10 +9,9 @@ import 'obj/ScheduleObj.dart';
 class HomePage extends StatefulWidget {
   final String title;
 
-  final Database db;
-  final FlutterLocalNotificationsPlugin notifications;
+  final Helper helper;
 
-  HomePage({Key key, this.title, this.db, this.notifications}) : super(key: key);
+  HomePage({Key key, @required this.title, @required this.helper}) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -24,7 +21,7 @@ class _HomePageState extends State<HomePage> {
   List<MedicationObj> medications;
 
   getMedications() async {
-    final List<Map<String, dynamic>> medicationMaps = await widget.db.query('medication');
+    final List<Map<String, dynamic>> medicationMaps = await widget.helper.db.query('medication');
     final List<MedicationObj> medications = medicationMaps.map((map) {
       return MedicationObj.fromDbMap(map);
     }).toList();
@@ -34,15 +31,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   refreshNotifications() async {
-    final List<Map<String, dynamic>> scheduleRecords = await widget.db.rawQuery(
+    final List<Map<String, dynamic>> scheduleRecords = await widget.helper.db.rawQuery(
       'SELECT * FROM schedule INNER JOIN medication ON medication.id = schedule.medication_id'
     );
 
     final Map<ScheduleKey, List<Map<String, dynamic>>> groupedSchedules = groupSchedules(scheduleRecords);
 
-    await clearNotifications(widget.notifications);
+    await widget.helper.notification.clearNotifications();
 
-    return addNotifications(widget.notifications, groupedSchedules);
+    return widget.helper.notification.addNotifications(groupedSchedules);
   }
 
   onSaved() async {

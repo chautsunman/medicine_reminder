@@ -14,15 +14,15 @@ class Schedule extends StatelessWidget {
   }) : super(key: key);
 
   onDayClick(day) {
-    List<bool> parsedDays = schedule.getDays();
+    List<bool> parsedDays = schedule.getScheduleKey().getDays();
     parsedDays[day] = !parsedDays[day];
     final ScheduleObj newSchedule = ScheduleObj.copy(schedule);
-    newSchedule.setDays(parsedDays);
+    newSchedule.setSchedule(days: parsedDays);
     onScheduleChanged(newSchedule);
   }
 
   onPickTime(context) async {
-    final DateTime scheduleTimeDateTime = schedule.getTime();
+    final DateTime scheduleTimeDateTime = schedule.getScheduleKey().getTime();
     TimeOfDay selectedTime = await showTimePicker(
       initialTime: (scheduleTimeDateTime != null) ? TimeOfDay.fromDateTime(scheduleTimeDateTime) : TimeOfDay.now(),
       context: context,
@@ -30,14 +30,14 @@ class Schedule extends StatelessWidget {
     final ScheduleObj newSchedule = ScheduleObj.copy(schedule);
     DateTime newTime = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     newTime = newTime.add(Duration(hours: selectedTime.hour, minutes: selectedTime.minute));
-    newSchedule.setTime(newTime);
+    newSchedule.setSchedule(time: newTime);
     onScheduleChanged(newSchedule);
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<bool> parsedDays = schedule.getDays();
-    final DateTime timeDateTime = schedule.getTime();
+    final List<bool> parsedDays = schedule.getScheduleKey().getDays();
+    final DateTime timeDateTime = schedule.getScheduleKey().getTime();
     final TimeOfDay timeTimeOfDay = (timeDateTime != null) ? TimeOfDay.fromDateTime(timeDateTime) : null;
     final String timeStr = (timeTimeOfDay != null) ? timeTimeOfDay.format(context) : '';
 

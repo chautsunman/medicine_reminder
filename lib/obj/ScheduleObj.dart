@@ -1,5 +1,24 @@
 import 'dart:math';
 
+class ScheduleKey {
+  final int day;
+  final int time;
+
+  ScheduleKey(this.day, this.time);
+
+  bool valid() {
+    return day != null && time != null;
+  }
+
+  List<bool> getDays() {
+    return parseDay(day);
+  }
+
+  DateTime getTime() {
+    return parseTime(time);
+  }
+}
+
 class ScheduleObj {
   int id;
   int medicationId;
@@ -43,35 +62,18 @@ class ScheduleObj {
     isDeleted: schedule.isDeleted,
   );
 
-  List<bool> getDays() {
-    return parseDay(scheduleDay);
-  }
-
-  setDays(List<bool> days) {
-    scheduleDay = calculateDay(days);
-  }
-
-  DateTime getTime() {
-    return parseTime(scheduleTime);
-  }
-
-  setTime(DateTime time) {
-    scheduleTime = calculateTime(time);
-  }
-
   ScheduleKey getScheduleKey() {
     return ScheduleKey(scheduleDay, scheduleTime);
   }
-}
 
-class ScheduleKey {
-  final int day;
-  final int time;
+  setSchedule({List<bool> days, DateTime time}) {
+    if (days != null) {
+      scheduleDay = calculateDay(days);
+    }
 
-  ScheduleKey(this.day, this.time);
-
-  bool valid() {
-    return day != null && time != null;
+    if (time != null) {
+      scheduleTime = calculateTime(time);
+    }
   }
 }
 

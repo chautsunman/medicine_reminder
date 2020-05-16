@@ -12,6 +12,9 @@ import 'HomePage.dart';
 import 'DetailsPage.dart';
 import 'InitPage.dart';
 
+import 'NotificationHelper.dart';
+import 'Helper.dart';
+
 import 'obj/MedicationObj.dart';
 
 void main() => runApp(MedicineReminderApp());
@@ -31,7 +34,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
     init();
   }
 
-  Future<FlutterLocalNotificationsPlugin> initNotification() async {
+  Future<NotificationHelper> initNotification() async {
     FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
     var initializationSettingsAndroid = AndroidInitializationSettings('icon');
     // var initializationSettingsIOS = IOSInitializationSettings(onDidReceiveLocalNotification: onDidReceiveLocalNotification);
@@ -39,7 +42,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
     final bool initRes = await flutterLocalNotificationsPlugin.initialize(initializationSettings);
     if (initRes) {
       print('Notifications initialized.');
-      return flutterLocalNotificationsPlugin;
+      return NotificationHelper(flutterLocalNotificationsPlugin);
     }
     return null;
   }
@@ -124,6 +127,12 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
           }
         }
 
+        Helper helper = Helper(
+          db: initFuturesSnapshot.data[0],
+          photoPath: initFuturesSnapshot.data[1],
+          notification: initFuturesSnapshot.data[2],
+        );
+
         return MaterialApp(
           key: Key(initialRoute),
           title: 'Medicine Reminder',
@@ -138,8 +147,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
                   builder: (context) {
                     return HomePage(
                       title: 'Medicine Reminder',
-                      db: initFuturesSnapshot.data[0],
-                      notifications: initFuturesSnapshot.data[2]
+                      helper: helper,
                     );
                   },
                 );
@@ -150,8 +158,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
 
                     return DetailsPage(
                       medication: medication,
-                      db: initFuturesSnapshot.data[0],
-                      photoPath: initFuturesSnapshot.data[1],
+                      helper: helper,
                     );
                   },
                 );

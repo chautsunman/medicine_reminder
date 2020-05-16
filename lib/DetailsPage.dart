@@ -2,10 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import 'package:sqflite/sqflite.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'Schedule.dart';
+
+import 'Helper.dart';
 
 import 'obj/MedicationObj.dart';
 import 'obj/ScheduleObj.dart';
@@ -13,10 +14,9 @@ import 'obj/ScheduleObj.dart';
 class DetailsPage extends StatefulWidget {
   final MedicationObj medication;
 
-  final Database db;
-  final String photoPath;
+  final Helper helper;
 
-  DetailsPage({Key key, this.medication, this.db, this.photoPath}) : super(key: key);
+  DetailsPage({Key key, @required this.medication, @required this.helper}) : super(key: key);
 
   @override
   _DetailsPageState createState() => _DetailsPageState();
@@ -30,7 +30,7 @@ class _DetailsPageState extends State<DetailsPage> {
   Future<String> _savePhoto(MedicationObj medication) async {
     if (imgFile != null) {
       final photoFileName = '${nameController.text}_${DateTime.now().millisecondsSinceEpoch}';
-      await imgFile.copy('${widget.photoPath}/$photoFileName');
+      await imgFile.copy('${widget.helper.photoPath}/$photoFileName');
       medication.photoFileName = photoFileName;
       print('Photo saved.');
       return photoFileName;
@@ -82,7 +82,7 @@ class _DetailsPageState extends State<DetailsPage> {
 
     final photoFileName = await _savePhoto(medication);
     medication.photoFileName = photoFileName;
-    await widget.db.transaction((txn) async {
+    await widget.helper.db.transaction((txn) async {
       var batch = txn.batch();
       await _saveMedication(medication, batch);
       await _saveSchedule(schedules, batch);
@@ -115,7 +115,7 @@ class _DetailsPageState extends State<DetailsPage> {
 
   Future<File> _initEditGetImgFile(medication) async {
     if (medication.photoFileName != null) {
-      final imgFile = File('${widget.photoPath}/${medication.photoFileName}');
+      final imgFile = File('${widget.helper.photoPath}/${medication.photoFileName}');
       final imgFileExists = await imgFile.exists();
       if (imgFileExists) {
         return imgFile;
@@ -126,7 +126,7 @@ class _DetailsPageState extends State<DetailsPage> {
   }
 
   Future<List<ScheduleObj>> _initEditGetSchedules(medication) async {
-    final List<Map<String, dynamic>> scheduleMaps = await widget.db.query(
+    final List<Map<String, dynamic>> scheduleMaps = await widget.helper.db.query(
       'schedule',
       where: 'medication_id = ?',
       whereArgs: [medication.id],
