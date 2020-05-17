@@ -6,18 +6,18 @@ import 'Helper.dart';
 import 'obj/MedicationObj.dart';
 import 'obj/ScheduleObj.dart';
 
-class HomePage extends StatefulWidget {
+class Reminder extends StatefulWidget {
   final String title;
 
   final Helper helper;
 
-  HomePage({Key key, @required this.title, @required this.helper}) : super(key: key);
+  Reminder({Key key, @required this.title, @required this.helper}) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState();
+  _ReminderState createState() => _ReminderState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _ReminderState extends State<Reminder> {
   List<MedicationObj> medications;
 
   getMedications() async {
@@ -51,7 +51,7 @@ class _HomePageState extends State<HomePage> {
   onAdd() async {
     final res = await Navigator.pushNamed(
       context,
-      '/details',
+      'reminder/details',
       arguments: null
     );
 
@@ -63,7 +63,7 @@ class _HomePageState extends State<HomePage> {
   onMedicationTap(idx) async {
     final res = await Navigator.pushNamed(
       context,
-      '/details',
+      'reminder/details',
       arguments: medications[idx]
     );
 

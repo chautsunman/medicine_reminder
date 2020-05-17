@@ -8,14 +8,11 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import 'HomePage.dart';
-import 'DetailsPage.dart';
+import 'App.dart';
 import 'InitPage.dart';
 
-import 'NotificationHelper.dart';
 import 'Helper.dart';
-
-import 'obj/MedicationObj.dart';
+import 'NotificationHelper.dart';
 
 void main() => runApp(MedicineReminderApp());
 
@@ -127,11 +124,14 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
           }
         }
 
-        Helper helper = Helper(
-          db: initFuturesSnapshot.data[0],
-          photoPath: initFuturesSnapshot.data[1],
-          notification: initFuturesSnapshot.data[2],
-        );
+        Helper helper;
+        if (initFuturesSnapshot.hasData) {
+          helper = Helper(
+            db: initFuturesSnapshot.data[0],
+            photoPath: initFuturesSnapshot.data[1],
+            notification: initFuturesSnapshot.data[2],
+          );
+        }
 
         return MaterialApp(
           key: Key(initialRoute),
@@ -145,19 +145,8 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
               if (settings.name == '/') {
                 return MaterialPageRoute(
                   builder: (context) {
-                    return HomePage(
+                    return App(
                       title: 'Medicine Reminder',
-                      helper: helper,
-                    );
-                  },
-                );
-              } else if (settings.name == '/details') {
-                return MaterialPageRoute(
-                  builder: (context) {
-                    final MedicationObj medication = settings.arguments;
-
-                    return DetailsPage(
-                      medication: medication,
                       helper: helper,
                     );
                   },
