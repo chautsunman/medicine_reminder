@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'Reminder.dart';
 import 'DetailsPage.dart';
 
-import 'Helper.dart';
+import '../helper/Helper.dart';
 
-import 'obj/MedicationObj.dart';
+import '../obj/MedicationObj.dart';
 
 class ReminderPage extends StatelessWidget {
   final String title;

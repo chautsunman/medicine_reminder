@@ -6,10 +6,10 @@ import 'package:image_picker/image_picker.dart';
 
 import 'Schedule.dart';
 
-import 'Helper.dart';
+import '../helper/Helper.dart';
 
-import 'obj/MedicationObj.dart';
-import 'obj/ScheduleObj.dart';
+import '../obj/MedicationObj.dart';
+import '../obj/ScheduleObj.dart';
 
 class DetailsPage extends StatefulWidget {
   final MedicationObj medication;
@@ -26,6 +26,7 @@ class _DetailsPageState extends State<DetailsPage> {
   final nameController = TextEditingController();
   File imgFile;
   List<ScheduleObj> schedules = List<ScheduleObj>();
+  List<ScheduleObj> oldSchedules = List<ScheduleObj>();
 
   Future<String> _savePhoto(MedicationObj medication) async {
     if (imgFile != null) {
@@ -38,56 +39,17 @@ class _DetailsPageState extends State<DetailsPage> {
     return null;
   }
 
-  Future _saveMedication(MedicationObj medication, batch) async {
-    if (widget.medication == null || widget.medication.id == null) {
-      await batch.insert('medication', medication.toMap());
-    } else {
-      medication.id = widget.medication.id;
-      await batch.update(
-        'medication',
-        medication.toMap(),
-        where: 'id = ?',
-        whereArgs: [medication.id]
-      );
-    }
-  }
-
-  Future _saveSchedule(schedules, batch) async {
-    schedules.forEach((schedule) {
-      if (schedule.id == null) {
-        batch.insert('schedule', schedule.toMap());
-      } else if (!schedule.isDeleted) {
-        batch.update(
-          'schedule',
-          schedule.toMap(),
-          where: 'id = ?',
-          whereArgs: [schedule.id]
-        );
-      } else {
-        batch.delete(
-          'schedule',
-          where: 'id = ?',
-          whereArgs: [schedule.id]
-        );
-      }
-    });
-  }
-
   onSaveBtnPressed(context) async {
     print('onSaveBtnPressed');
 
     final MedicationObj medication = MedicationObj(
+      id: widget.medication.id,
       name: nameController.text
     );
 
     final photoFileName = await _savePhoto(medication);
     medication.photoFileName = photoFileName;
-    await widget.helper.db.transaction((txn) async {
-      var batch = txn.batch();
-      await _saveMedication(medication, batch);
-      await _saveSchedule(schedules, batch);
-      batch.commit(noResult: true);
-    });
+    await widget.helper.medicationDbHelper.saveMedication(medication, schedules, oldSchedules);
     print('Saved.');
 
     Navigator.pop(context, true);
@@ -109,7 +71,7 @@ class _DetailsPageState extends State<DetailsPage> {
 
   addSchedule() {
     setState(() {
-      schedules.add(ScheduleObj(medicationId: widget.medication.id));
+      schedules.add(ScheduleObj.empty());
     });
   }
 
@@ -126,13 +88,17 @@ class _DetailsPageState extends State<DetailsPage> {
   }
 
   Future<List<ScheduleObj>> _initEditGetSchedules(medication) async {
-    final List<Map<String, dynamic>> scheduleMaps = await widget.helper.db.query(
-      'schedule',
-      where: 'medication_id = ?',
-      whereArgs: [medication.id],
-    );
+    final List<Map<String, dynamic>> scheduleMaps = await widget.helper.medicationDbHelper.getMedicationSchedules(medication.id);
     final List<ScheduleObj> schedules = scheduleMaps.map((map) {
-      return ScheduleObj.fromDbMap(map);
+      final List<String> scheduleDays = map['schedule_days'].split(',');
+      List<bool> scheduleDayBools = List.filled(7, false);
+      scheduleDays.forEach((dayStr) {
+        final int day = int.tryParse(dayStr);
+        if (day != null) {
+          scheduleDayBools[day] = true;
+        }
+      });
+      return ScheduleObj(scheduleDayBools, DateTime.fromMillisecondsSinceEpoch(map['schedule_time'], isUtc: true));
     }).toList();
     return schedules;
   }
@@ -148,7 +114,8 @@ class _DetailsPageState extends State<DetailsPage> {
         imgFile = initRes[0];
       }
       if (initRes[1] != null) {
-        schedules = initRes[1];
+        schedules = List.from(initRes[1]);
+        oldSchedules = List.from(initRes[1]);
       }
     });
   }

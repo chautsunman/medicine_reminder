@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'Helper.dart';
+import '../helper/Helper.dart';
 
 class CheckInPage extends StatelessWidget {
   final String title;

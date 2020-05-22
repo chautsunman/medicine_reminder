@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
-import 'obj/ScheduleObj.dart';
+import '../obj/ScheduleObj.dart';
 
 class Schedule extends StatelessWidget {
   final ScheduleObj schedule;
@@ -14,15 +14,13 @@ class Schedule extends StatelessWidget {
   }) : super(key: key);
 
   onDayClick(day) {
-    List<bool> parsedDays = schedule.getScheduleKey().getDays();
-    parsedDays[day] = !parsedDays[day];
     final ScheduleObj newSchedule = ScheduleObj.copy(schedule);
-    newSchedule.setSchedule(days: parsedDays);
+    newSchedule.days[day] = !schedule.days[day];
     onScheduleChanged(newSchedule);
   }
 
   onPickTime(context) async {
-    final DateTime scheduleTimeDateTime = schedule.getScheduleKey().getTime();
+    final DateTime scheduleTimeDateTime = schedule.time;
     TimeOfDay selectedTime = await showTimePicker(
       initialTime: (scheduleTimeDateTime != null) ? TimeOfDay.fromDateTime(scheduleTimeDateTime) : TimeOfDay.now(),
       context: context,
@@ -30,14 +28,14 @@ class Schedule extends StatelessWidget {
     final ScheduleObj newSchedule = ScheduleObj.copy(schedule);
     DateTime newTime = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
     newTime = newTime.add(Duration(hours: selectedTime.hour, minutes: selectedTime.minute));
-    newSchedule.setSchedule(time: newTime);
+    newSchedule.time = newTime;
     onScheduleChanged(newSchedule);
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<bool> parsedDays = schedule.getScheduleKey().getDays();
-    final DateTime timeDateTime = schedule.getScheduleKey().getTime();
+    final List<bool> parsedDays = schedule.days;
+    final DateTime timeDateTime = schedule.time;
     final TimeOfDay timeTimeOfDay = (timeDateTime != null) ? TimeOfDay.fromDateTime(timeDateTime) : null;
     final String timeStr = (timeTimeOfDay != null) ? timeTimeOfDay.format(context) : '';
 

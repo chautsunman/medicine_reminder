@@ -11,8 +11,10 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'App.dart';
 import 'InitPage.dart';
 
-import 'Helper.dart';
-import 'NotificationHelper.dart';
+import 'helper/Helper.dart';
+import 'helper/MedicationDbHelper.dart';
+import 'helper/NotificationHelper.dart';
+import 'helper/DbCreateHelper.dart';
 
 void main() => runApp(MedicineReminderApp());
 
@@ -48,51 +50,12 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
     final dbPath = join(await getDatabasesPath(), 'medication.db');
     final dbFuture = openDatabase(
       dbPath,
-      onCreate: (db, version) async {
-        var batch = db.batch();
-        batch.execute('''
-          CREATE TABLE medication (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name VARCHAR(255) NOT NULL,
-            photo_file_name VARCHAR(255)
-          )
-        ''');
-        batch.execute('''
-          CREATE TABLE schedule (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            medication_id INTEGER,
-            schedule_day INTEGER,
-            schedule_time INTEGER,
-            FOREIGH KEY(medication_id) REFERENCES medication(id)
-          )
-        ''');
-        await batch.commit();
-      },
-      onUpgrade: (db, oldVersion, newVersion) async {
-        if (oldVersion <= 1) {
-          var batch = db.batch();
-          batch.execute('ALTER TABLE medication ALTER COLUMN name VARCHAR(255) NOT NULL');
-          batch.execute('ALTER TABLE medication ADD photo_file_name VARCHAR(255)');
-          await batch.commit();
-        }
-        if (oldVersion <= 2) {
-          var batch = db.batch();
-          batch.execute('''
-            CREATE TABLE IF NOT EXISTS schedule (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              medication_id INTEGER,
-              schedule_day INTEGER,
-              schedule_time INTEGER,
-              FOREIGN KEY(medication_id) REFERENCES medication(id)
-            )
-          ''');
-          await batch.commit();
-        }
-      },
+      onCreate: onDbCreate,
+      onUpgrade: onDbUpgrade,
       onOpen: (db) {
         print('DB opened.');
       },
-      version: 3,
+      version: 4,
     );
 
     final localPathFuture = getApplicationDocumentsDirectory().then((dir) => dir.path);
@@ -128,6 +91,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
         if (initFuturesSnapshot.hasData) {
           helper = Helper(
             db: initFuturesSnapshot.data[0],
+            medicationDbHelper: MedicationDbHelper(initFuturesSnapshot.data[0]),
             photoPath: initFuturesSnapshot.data[1],
             notification: initFuturesSnapshot.data[2],
           );

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'ReminderPage.dart';
-import 'CheckInPage.dart';
+import 'Reminder/ReminderPage.dart';
+import 'CheckIn/CheckInPage.dart';
 
-import 'Helper.dart';
+import 'helper/Helper.dart';
 
 class App extends StatefulWidget {
   final String title;

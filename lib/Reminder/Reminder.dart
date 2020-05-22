@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'NotificationHelper.dart';
-import 'Helper.dart';
+import '../helper/NotificationHelper.dart';
+import '../helper/Helper.dart';
 
-import 'obj/MedicationObj.dart';
-import 'obj/ScheduleObj.dart';
+import '../obj/MedicationObj.dart';
+import '../obj/ScheduleKey.dart';
 
 class Reminder extends StatefulWidget {
   final String title;
@@ -21,7 +21,7 @@ class _ReminderState extends State<Reminder> {
   List<MedicationObj> medications;
 
   getMedications() async {
-    final List<Map<String, dynamic>> medicationMaps = await widget.helper.db.query('medication');
+    final List<Map<String, dynamic>> medicationMaps = await widget.helper.medicationDbHelper.getMedication();
     final List<MedicationObj> medications = medicationMaps.map((map) {
       return MedicationObj.fromDbMap(map);
     }).toList();
@@ -31,9 +31,13 @@ class _ReminderState extends State<Reminder> {
   }
 
   refreshNotifications() async {
-    final List<Map<String, dynamic>> scheduleRecords = await widget.helper.db.rawQuery(
-      'SELECT * FROM schedule INNER JOIN medication ON medication.id = schedule.medication_id'
-    );
+    final List<Map<String, dynamic>> scheduleRecords = await widget.helper.db.rawQuery('''
+      SELECT *
+      FROM schedule_group
+      INNER JOIN schedule_medication ON schedule_medication.schedule_group_id = schedule_group.id
+      INNER JOIN medication ON medication.id = schedule_medication.medication_id
+      WHERE schedule_group.active = 1 AND medication.active = 1
+    ''');
 
     final Map<ScheduleKey, List<Map<String, dynamic>>> groupedSchedules = groupSchedules(scheduleRecords);
 

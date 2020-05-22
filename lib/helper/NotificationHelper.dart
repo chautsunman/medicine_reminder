@@ -1,8 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 
-import 'obj/ScheduleObj.dart';
-import 'obj/MedicationObj.dart';
+import '../obj/ScheduleKey.dart';
 
 final Map<int, Day> dayMap = {
   0: Day.Sunday,
@@ -40,24 +39,19 @@ class NotificationHelper {
     int notificationIdx = 0;
     groupedSchedules.forEach((scheduleKey, medications) {
       if (scheduleKey.valid()) {
-        final List<bool> days = scheduleKey.getDays();
         final DateTime timeDateTime = scheduleKey.getTime();
         final Time time = Time(timeDateTime.hour, timeDateTime.minute, timeDateTime.second);
 
-        for (int dayIdx = 0; dayIdx < days.length; dayIdx++) {
-          if (days[dayIdx]) {
-            addNotificationFutures.add(notification.showWeeklyAtDayAndTime(
-              notificationIdx,
-              'Time to take medication.',
-              '${medications.length} medications at ${DateFormat.Hm().format(timeDateTime)}.',
-              dayMap[dayIdx],
-              time,
-              platformChannelSpecifics
-            ));
-            notificationIdx++;
-            print('Added notification at day $dayIdx ${DateFormat.Hm().format(timeDateTime)} to take ${medications.length} medications.');
-          }
-        }
+        addNotificationFutures.add(notification.showWeeklyAtDayAndTime(
+          notificationIdx,
+          'Time to take medication.',
+          '${medications.length} medications at ${DateFormat.Hm().format(timeDateTime)}.',
+          dayMap[scheduleKey.day],
+          time,
+          platformChannelSpecifics
+        ));
+        notificationIdx++;
+        print('Added notification at day ${scheduleKey.day} ${DateFormat.Hm().format(timeDateTime)} to take ${medications.length} medications.');
       }
     });
 
@@ -69,17 +63,12 @@ class NotificationHelper {
 
 Map<ScheduleKey, List<Map<String, dynamic>>> groupSchedules(List<Map<String, dynamic>> schedulesDbMap) {
   Map<ScheduleKey, List<Map<String, dynamic>>> groupedSchedules = {};
-  schedulesDbMap.forEach((map) {
-    ScheduleObj schedule = ScheduleObj.fromDbMap(map);
-    MedicationObj medication = MedicationObj.fromDbMap(map);
-    final ScheduleKey scheduleKey = schedule.getScheduleKey();
+  schedulesDbMap.forEach((scheduleDbMap) {
+    final ScheduleKey scheduleKey = ScheduleKey(scheduleDbMap['schedule_day'], scheduleDbMap['schedule_time']);
     if (!groupedSchedules.containsKey(scheduleKey)) {
       groupedSchedules[scheduleKey] = [];
     }
-    groupedSchedules[scheduleKey].add({
-      'schedule': schedule,
-      'medication': medication,
-    });
+    groupedSchedules[scheduleKey].add(scheduleDbMap);
   });
   return groupedSchedules;
 }
