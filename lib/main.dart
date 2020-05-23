@@ -53,10 +53,11 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
       dbPath,
       onCreate: onDbCreate,
       onUpgrade: onDbUpgrade,
-      onOpen: (db) {
-        print('DB opened.');
+      onOpen: (db) async {
+        final int version = await db.getVersion();
+        print('DB opened. Version: $version');
       },
-      version: 4,
+      version: 5,
     );
 
     final localPathFuture = getApplicationDocumentsDirectory().then((dir) => dir.path);

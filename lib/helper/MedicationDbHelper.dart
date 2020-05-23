@@ -50,6 +50,8 @@ class MedicationDbHelper {
 
       print('Medication ID: $medicationId');
 
+      var now = DateTime.now();
+
       var schedulesBatch = txn.batch();
 
       Set<ScheduleKey> newScheduleKeys = Set<ScheduleKey>();
@@ -100,7 +102,7 @@ class MedicationDbHelper {
         print('Add new schedule group $newScheduleGroupId.');
         schedulesBatch.insert(
           'schedule_group',
-          ScheduleGroup.newGroup(newScheduleGroupId, schedulesToAdd[i].day, schedulesToAdd[i].time).toDbMap()
+          ScheduleGroupObj.newGroup(newScheduleGroupId, schedulesToAdd[i].day, schedulesToAdd[i].time, now).toDbMap()
         );
 
         print('Add medication to new schedule group.');
@@ -126,7 +128,8 @@ class MedicationDbHelper {
           schedulesBatch.update(
             'schedule_group',
             {
-              'active': 0
+              'active': 0,
+              'non_active_time': now
             },
             where: 'id = ?',
             whereArgs: [sameScheduleGroupId]
@@ -161,7 +164,7 @@ class MedicationDbHelper {
           print('Add new schedule group $newScheduleGroupId.');
           schedulesBatch.insert(
             'schedule_group',
-            ScheduleGroup.newGroup(newScheduleGroupId, schedulesToRemove[i].day, schedulesToRemove[i].time).toDbMap()
+            ScheduleGroupObj.newGroup(newScheduleGroupId, schedulesToRemove[i].day, schedulesToRemove[i].time, now).toDbMap()
           );
 
           print('Add other medications that are in the same old schedule group $oldScheduleGroupId to new schedule group $newScheduleGroupId.');
@@ -180,7 +183,8 @@ class MedicationDbHelper {
           schedulesBatch.update(
             'schedule_group',
             {
-              'active': 0
+              'active': 0,
+              'non_active_time': now
             },
             where: 'id = ?',
             whereArgs: [oldScheduleGroupId]

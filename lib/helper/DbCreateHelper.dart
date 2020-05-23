@@ -10,7 +10,7 @@ onDbCreate(Database db, int version) async {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name VARCHAR(255) NOT NULL,
         photo_file_name VARCHAR(255),
-        active INTEGER DEFAULT 1
+        active INTEGER NOT NULL DEFAULT 1
       )
     ''');
     batch.execute('''
@@ -18,7 +18,9 @@ onDbCreate(Database db, int version) async {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         schedule_day INTEGER,
         schedule_time INTEGER,
-        active INTEGER DEFAULT 1
+        active_time INTEGER NOT NULL,
+        non_active_time INTEGER,
+        active INTEGER NOT NULL DEFAULT 1
       )
     ''');
     batch.execute('''
@@ -34,7 +36,9 @@ onDbCreate(Database db, int version) async {
       CREATE TABLE IF NOT EXISTS check_ins (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         schedule_group_id INTEGER,
-        check_in_time INTEGER NOT NULL
+        medication_date INTEGER NOT NULL,
+        check_in_time INTEGER NOT NULL,
+        FOREIGN KEY(schedule_group_id) REFERENCES schedule_group(id)
       )
     ''');
     await batch.commit();
@@ -143,6 +147,82 @@ onDbUpgrade(Database db, int oldVersion, int newVersion) async {
       var dropTableBatch = txn.batch();
       dropTableBatch.execute('DROP TABLE IF EXISTS schedule');
       await dropTableBatch.commit();
+    });
+  }
+  if (oldVersion <= 4) {
+    print('Upgrading to version 5.');
+    await db.transaction((txn) async {
+      try {
+        var deleteCheckInTableBatch = txn.batch();
+        deleteCheckInTableBatch.execute('DROP TABLE IF EXISTS check_ins');
+        await deleteCheckInTableBatch.commit();
+      } catch (e) {
+        print(e);
+        throw Exception('Cannot delete old check_ins table');
+      }
+
+      try {
+        var createCheckInTableBatch = txn.batch();
+        createCheckInTableBatch.execute('''
+          CREATE TABLE IF NOT EXISTS check_ins (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            schedule_group_id INTEGER,
+            medication_date INTEGER NOT NULL,
+            check_in_time INTEGER NOT NULL,
+            FOREIGN KEY(schedule_group_id) REFERENCES schedule_group(id)
+          )
+        ''');
+        await createCheckInTableBatch.commit();
+      } catch (e) {
+        print(e);
+        throw Exception('Cannot create new check_ins table');
+      }
+
+      try {
+        var addActiveDetailsBatch = txn.batch();
+        final int now = DateTime.now().millisecondsSinceEpoch;
+        addActiveDetailsBatch.rawDelete('DELETE FROM schedule_group WHERE active != 1');
+        addActiveDetailsBatch.rawDelete('DELETE FROM medication WHERE active != 1');
+        addActiveDetailsBatch.execute('''
+          CREATE TABLE IF NOT EXISTS schedule_group_2 (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            schedule_day INTEGER,
+            schedule_time INTEGER,
+            active_time INTEGER NOT NULL,
+            non_active_time INTEGER,
+            active INTEGER NOT NULL DEFAULT 1
+          )
+        ''');
+        addActiveDetailsBatch.execute('''
+          CREATE TABLE medication_2 (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(255) NOT NULL,
+            photo_file_name VARCHAR(255),
+            active INTEGER NOT NULL DEFAULT 1
+          )
+        ''');
+        addActiveDetailsBatch.execute(
+          '''
+            INSERT INTO schedule_group_2
+            SELECT id, schedule_day, schedule_time, ?, NULL, 1
+            FROM schedule_group
+          ''',
+          [now]
+        );
+        addActiveDetailsBatch.execute('''
+          INSERT INTO medication_2
+          SELECT id, name, photo_file_name, 1
+          FROM medication
+        ''');
+        addActiveDetailsBatch.execute('DROP TABLE schedule_group');
+        addActiveDetailsBatch.execute('DROP TABLE medication');
+        addActiveDetailsBatch.execute('ALTER TABLE schedule_group_2 RENAME TO schedule_group');
+        addActiveDetailsBatch.execute('ALTER TABLE medication_2 RENAME TO medication');
+        await addActiveDetailsBatch.commit();
+      } catch (e) {
+        print(e);
+        throw Exception('Cannot add active details to schedule_group and medication table');
+      }
     });
   }
 }
