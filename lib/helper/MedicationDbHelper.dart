@@ -129,7 +129,7 @@ class MedicationDbHelper {
             'schedule_group',
             {
               'active': 0,
-              'non_active_time': now
+              'non_active_time': now.millisecondsSinceEpoch
             },
             where: 'id = ?',
             whereArgs: [sameScheduleGroupId]
@@ -184,7 +184,7 @@ class MedicationDbHelper {
             'schedule_group',
             {
               'active': 0,
-              'non_active_time': now
+              'non_active_time': now.millisecondsSinceEpoch
             },
             where: 'id = ?',
             whereArgs: [oldScheduleGroupId]

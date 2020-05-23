@@ -15,7 +15,7 @@ class ScheduleGroupObj {
       'schedule_day': day,
       'schedule_time': time,
       'active_time': activeTime.millisecondsSinceEpoch,
-      'non_active_time': nonActiveTime.millisecondsSinceEpoch,
+      'non_active_time': nonActiveTime?.millisecondsSinceEpoch,
       'active': 1
     };
     if (id != null) {
