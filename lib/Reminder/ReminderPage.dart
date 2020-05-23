@@ -1,53 +1,113 @@
 import 'package:flutter/material.dart';
 
-import 'Reminder.dart';
-import 'DetailsPage.dart';
-
+import '../helper/NotificationHelper.dart';
 import '../helper/Helper.dart';
 
 import '../obj/MedicationObj.dart';
+import '../obj/ScheduleKey.dart';
 
-class ReminderPage extends StatelessWidget {
+class ReminderPage extends StatefulWidget {
   final String title;
 
   final Helper helper;
 
-  ReminderPage({
-    Key key,
-    @required this.title,
-    @required this.helper
-  }) : super(key: key);
+  ReminderPage({Key key, @required this.title, @required this.helper}) : super(key: key);
+
+  @override
+  _ReminderPageState createState() => _ReminderPageState();
+}
+
+class _ReminderPageState extends State<ReminderPage> {
+  List<MedicationObj> medications;
+
+  getMedications() async {
+    final List<Map<String, dynamic>> medicationMaps = await widget.helper.medicationDbHelper.getMedication();
+    final List<MedicationObj> medications = medicationMaps.map((map) {
+      return MedicationObj.fromDbMap(map);
+    }).toList();
+    setState(() {
+      this.medications = medications;
+    });
+  }
+
+  refreshNotifications() async {
+    final List<Map<String, dynamic>> scheduleRecords = await widget.helper.db.rawQuery('''
+      SELECT *
+      FROM schedule_group
+      INNER JOIN schedule_medication ON schedule_medication.schedule_group_id = schedule_group.id
+      INNER JOIN medication ON medication.id = schedule_medication.medication_id
+      WHERE schedule_group.active = 1 AND medication.active = 1
+    ''');
+
+    final Map<ScheduleKey, List<Map<String, dynamic>>> groupedSchedules = groupSchedules(scheduleRecords);
+
+    await widget.helper.notification.clearNotifications();
+
+    return widget.helper.notification.addNotifications(groupedSchedules);
+  }
+
+  onSaved() async {
+    await refreshNotifications();
+
+    getMedications();
+  }
+
+  onAdd() async {
+    final res = await Navigator.pushNamed(
+      context,
+      'reminder/details',
+      arguments: null
+    );
+
+    if (res != null && res) {
+      onSaved();
+    }
+  }
+
+  onMedicationTap(idx) async {
+    final res = await Navigator.pushNamed(
+      context,
+      'reminder/details',
+      arguments: medications[idx]
+    );
+
+    if (res != null && res) {
+      onSaved();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    medications = [];
+
+    getMedications();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Navigator(
-      initialRoute: 'reminder/reminder',
-      onGenerateRoute: (RouteSettings settings) {
-        WidgetBuilder builder;
-
-        switch (settings.name) {
-          case 'reminder/reminder':
-            builder = (BuildContext context) => Reminder(
-              title: title,
-              helper: helper,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Container(
+        child: ListView.builder(
+          itemCount: medications.length,
+          itemBuilder: (context, idx) {
+            return ListTile(
+              title: Text(medications[idx].name),
+              onTap: () {
+                onMedicationTap(idx);
+              },
             );
-            break;
-          case 'reminder/details':
-            builder = (BuildContext context) {
-              final MedicationObj medication = settings.arguments;
-
-              return DetailsPage(
-                medication: medication,
-                helper: helper,
-              );
-            };
-            break;
-          default:
-            throw Exception('Invalid reminder page route: ${settings.name}');
-        }
-
-        return MaterialPageRoute(builder: builder, settings: settings);
-      },
+          },
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: onAdd,
+      ),
     );
   }
 }

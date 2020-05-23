@@ -5,6 +5,7 @@ import '../obj/ScheduleObj.dart';
 import '../obj/ScheduleKey.dart';
 import '../obj/ScheduleGroupObj.dart';
 import '../obj/ScheduleMedicationObj.dart';
+import '../obj/DateScheduleObj.dart';
 
 class MedicationDbHelper {
   final Database db;
@@ -191,5 +192,42 @@ class MedicationDbHelper {
 
       schedulesBatch.commit(noResult: true);
     });
+  }
+
+  Future<DateScheduleObj> getNextSchedule() async {
+    DateTime now = DateTime.now();
+    int nowWeekDay = now.weekday % 7;
+    List<Map<String, dynamic>> resMaps = await db.rawQuery(
+      '''
+        SELECT schedule_group.*, COUNT(*) AS medications_count
+        FROM schedule_group
+        INNER JOIN schedule_medication ON schedule_medication.schedule_group_id = schedule_group.id
+        INNER JOIN medication ON medication.id = schedule_medication.medication_id
+        WHERE
+        schedule_group.active = 1
+        AND medication.active = 1
+        GROUP BY schedule_group.id
+        ORDER BY
+        CASE WHEN schedule_group.schedule_day < ? THEN schedule_group.schedule_day + 7 ELSE schedule_group.schedule_day END ASC,
+        schedule_group.schedule_time ASC
+        LIMIT 1
+      ''',
+      [nowWeekDay]
+    );
+    if (resMaps.length <= 0) {
+      return null;
+    }
+    final int scheduleGroupId = resMaps[0]['id'];
+    final int scheduleDay = resMaps[0]['schedule_day'];
+    final int scheduleTime = resMaps[0]['schedule_time'];
+    final int medicationsCount = resMaps[0]['medications_count'];
+    DateTime nextScheduleDate = DateTime(now.year, now.month, now.day)
+        .add(Duration(days: scheduleDay - nowWeekDay))
+        .add(Duration(milliseconds: scheduleTime));
+    return DateScheduleObj(
+      nextScheduleDate,
+      scheduleGroupId,
+      medicationsCount
+    );
   }
 }

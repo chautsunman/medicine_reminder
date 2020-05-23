@@ -13,6 +13,7 @@ import 'InitPage.dart';
 
 import 'helper/Helper.dart';
 import 'helper/MedicationDbHelper.dart';
+import 'helper/CheckInDbHelper.dart';
 import 'helper/NotificationHelper.dart';
 import 'helper/DbCreateHelper.dart';
 
@@ -92,6 +93,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
           helper = Helper(
             db: initFuturesSnapshot.data[0],
             medicationDbHelper: MedicationDbHelper(initFuturesSnapshot.data[0]),
+            checkInDbHelper: CheckInDbHelper(initFuturesSnapshot.data[0]),
             photoPath: initFuturesSnapshot.data[1],
             notification: initFuturesSnapshot.data[2],
           );

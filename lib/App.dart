@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'Reminder/ReminderPage.dart';
-import 'CheckIn/CheckInPage.dart';
+import 'Reminder/ReminderParent.dart';
+import 'CheckIn/CheckInParent.dart';
 
 import 'helper/Helper.dart';
 
@@ -32,11 +32,11 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     List<Widget> pages = <Widget>[
-      ReminderPage(
+      ReminderParent(
         title: widget.title,
         helper: widget.helper,
       ),
-      CheckInPage(
+      CheckInParent(
         title: widget.title,
         helper: widget.helper,
       ),
