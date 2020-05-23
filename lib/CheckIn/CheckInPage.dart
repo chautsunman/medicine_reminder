@@ -64,7 +64,7 @@ class _CheckInPageState extends State<CheckInPage> {
                 child: Column(
                   children: <Widget>[
                     ListTile(
-                      leading: Icon(Icons.check),
+                      leading: Icon(Icons.alarm),
                       title: Text('Next Time To Take Medicine at ${nextSchedule.date}'),
                       subtitle: Text('${nextSchedule.medicationsCount} medications in total.'),
                     ),

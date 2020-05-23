@@ -199,11 +199,19 @@ class MedicationDbHelper {
   }
 
   Future<DateScheduleObj> getNextSchedule() async {
-    DateTime now = DateTime.now();
-    int nowWeekDay = now.weekday % 7;
+    final DateTime now = DateTime.now();
+    final int nowWeekDay = now.weekday % 7;
+    final int nowTime = ((now.hour * 60 + now.minute) * 60 + now.second) * 1000 + now.millisecond;
     List<Map<String, dynamic>> resMaps = await db.rawQuery(
       '''
-        SELECT schedule_group.*, COUNT(*) AS medications_count
+        SELECT
+        schedule_group.*,
+        COUNT(*) AS medications_count,
+        CASE
+          WHEN schedule_group.schedule_day = ? THEN CASE WHEN schedule_group.schedule_time > ? THEN schedule_group.schedule_day ELSE schedule_group.schedule_day + 7 END
+          WHEN schedule_group.schedule_day < ? THEN schedule_group.schedule_day + 7
+          ELSE schedule_group.schedule_day
+        END AS next_schedule_day
         FROM schedule_group
         INNER JOIN schedule_medication ON schedule_medication.schedule_group_id = schedule_group.id
         INNER JOIN medication ON medication.id = schedule_medication.medication_id
@@ -211,12 +219,9 @@ class MedicationDbHelper {
         schedule_group.active = 1
         AND medication.active = 1
         GROUP BY schedule_group.id
-        ORDER BY
-        CASE WHEN schedule_group.schedule_day < ? THEN schedule_group.schedule_day + 7 ELSE schedule_group.schedule_day END ASC,
-        schedule_group.schedule_time ASC
-        LIMIT 1
+        ORDER BY next_schedule_day ASC, schedule_group.schedule_time ASC
       ''',
-      [nowWeekDay]
+      [nowWeekDay, nowTime, nowWeekDay]
     );
     if (resMaps.length <= 0) {
       return null;
@@ -225,8 +230,9 @@ class MedicationDbHelper {
     final int scheduleDay = resMaps[0]['schedule_day'];
     final int scheduleTime = resMaps[0]['schedule_time'];
     final int medicationsCount = resMaps[0]['medications_count'];
+    final int nextScheduleDay = resMaps[0]['next_schedule_day'];
     DateTime nextScheduleDate = DateTime(now.year, now.month, now.day)
-        .add(Duration(days: scheduleDay - nowWeekDay))
+        .add(Duration(days: nextScheduleDay - nowWeekDay))
         .add(Duration(milliseconds: scheduleTime));
     return DateScheduleObj(
       nextScheduleDate,
