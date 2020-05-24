@@ -7,6 +7,8 @@ import '../obj/ScheduleGroupObj.dart';
 import '../obj/ScheduleMedicationObj.dart';
 import '../obj/DateScheduleObj.dart';
 
+import '../utils/DateTimeUtils.dart';
+
 class MedicationDbHelper {
   final Database db;
 
@@ -50,7 +52,7 @@ class MedicationDbHelper {
 
       print('Medication ID: $medicationId');
 
-      var now = DateTime.now();
+      var now = getSameUtcTimeOfNow();
 
       var schedulesBatch = txn.batch();
 
@@ -71,7 +73,7 @@ class MedicationDbHelper {
       print('Number of schedules to remove: ${schedulesToRemove.length}');
 
       List<Map<String, dynamic>> latestScheduleGroupIdRecord = await txn.rawQuery('''
-        SELECT MAX(id) AS latest_schedule_group_id
+        SELECT CASE WHEN COUNT(*) > 0 THEN MAX(id) ELSE 0 END AS latest_schedule_group_id
         FROM schedule_group;
       ''');
       int newScheduleGroupId = (latestScheduleGroupIdRecord.length > 0)
@@ -161,23 +163,41 @@ class MedicationDbHelper {
           int oldScheduleGroupId = oldScheduleGroupIdRecords[0]['id'];
           print('Old schedule group: $oldScheduleGroupId');
 
-          print('Add new schedule group $newScheduleGroupId.');
-          schedulesBatch.insert(
-            'schedule_group',
-            ScheduleGroupObj.newGroup(newScheduleGroupId, schedulesToRemove[i].day, schedulesToRemove[i].time, now).toDbMap()
+          List<Map<String, dynamic>> oldScheduleGroupMedicationsCountRecords = await txn.rawQuery(
+            '''
+              SELECT COUNT(*) AS medications_count
+              FROM schedule_medication
+              WHERE schedule_group_id = ? AND medication_id != ?
+            ''',
+            [oldScheduleGroupId, medicationId]
           );
 
-          print('Add other medications that are in the same old schedule group $oldScheduleGroupId to new schedule group $newScheduleGroupId.');
-          schedulesBatch.execute(
-            '''
-              INSERT INTO schedule_medication (schedule_group_id, medication_id)
-              SELECT ?, medication_id
-              FROM schedule_medication
-              WHERE schedule_group_id = ?
-              AND medication_id != ?
-            ''',
-            [newScheduleGroupId, oldScheduleGroupId, medicationId]
-          );
+          int oldScheduleGroupMedicationsCount = oldScheduleGroupMedicationsCountRecords[0]['medications_count'];
+          print('Number of other medications that are in the same old schedule group: $oldScheduleGroupMedicationsCount');
+
+          if (oldScheduleGroupMedicationsCount > 0) {
+            print('Add new schedule group $newScheduleGroupId.');
+            schedulesBatch.insert(
+              'schedule_group',
+              ScheduleGroupObj.newGroup(newScheduleGroupId, schedulesToRemove[i].day, schedulesToRemove[i].time, now).toDbMap()
+            );
+
+            print('Add other medications that are in the same old schedule group $oldScheduleGroupId to new schedule group $newScheduleGroupId.');
+            schedulesBatch.execute(
+              '''
+                INSERT INTO schedule_medication (schedule_group_id, medication_id)
+                SELECT ?, medication_id
+                FROM schedule_medication
+                WHERE schedule_group_id = ?
+                AND medication_id != ?
+              ''',
+              [newScheduleGroupId, oldScheduleGroupId, medicationId]
+            );
+
+            newScheduleGroupId++;
+          } else {
+            print('Do not need to add new schedule group as removed medication is the only medication in the old schedule group.');
+          }
 
           print('Set old schedule group of other medications to not active.');
           schedulesBatch.update(
@@ -189,8 +209,6 @@ class MedicationDbHelper {
             where: 'id = ?',
             whereArgs: [oldScheduleGroupId]
           );
-
-          newScheduleGroupId++;
         }
       }
 

@@ -19,7 +19,7 @@ class ScheduleLastCheckInObj {
     final int scheduleDayTemp = scheduleDay + 1;
     if (weekDay == scheduleDayTemp) {
       DateTime expTime = DateTime.utc(d.year, d.month, d.day).add(Duration(milliseconds: scheduleTime));
-      if (d.isAfter(expTime)) {
+      if (d.isAfter(expTime) || activeTime.isAfter(expTime)) {
         expLastCheckInTime = expTime;
       } else {
         expLastCheckInTime = expTime.subtract(Duration(days: 7));

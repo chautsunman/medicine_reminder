@@ -57,7 +57,7 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
         final int version = await db.getVersion();
         print('DB opened. Version: $version');
       },
-      version: 5,
+      version: 6,
     );
 
     final localPathFuture = getApplicationDocumentsDirectory().then((dir) => dir.path);

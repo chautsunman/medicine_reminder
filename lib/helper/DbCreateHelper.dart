@@ -225,4 +225,13 @@ onDbUpgrade(Database db, int oldVersion, int newVersion) async {
       }
     });
   }
+  if (oldVersion <= 5) {
+    print('Upgrading to version 6');
+    await db.transaction((txn) async {
+      var deleteAllSchedulesBatch = txn.batch();
+      deleteAllSchedulesBatch.delete('schedule_medication');
+      deleteAllSchedulesBatch.delete('schedule_group');
+      deleteAllSchedulesBatch.commit();
+    });
+  }
 }

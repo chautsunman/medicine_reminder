@@ -6,6 +6,8 @@ import '../obj/DateScheduleObj.dart';
 import '../obj/ScheduleLastCheckInObj.dart';
 import '../obj/CheckInObj.dart';
 
+import '../utils/DateTimeUtils.dart';
+
 class CheckInPage extends StatefulWidget {
   final String title;
 
@@ -22,30 +24,67 @@ class _CheckInPageState extends State<CheckInPage> {
   DateScheduleObj nextSchedule;
   int missedCheckIns;
 
-  getNextSchedule() async {
-    final DateScheduleObj nextSchedule = await widget.helper.medicationDbHelper.getNextSchedule();
-    setState(() {
-      this.nextSchedule = nextSchedule;
-    });
+  Future<DateScheduleObj> getNextSchedule() async {
+    try {
+      final DateScheduleObj nextSchedule = await widget.helper.medicationDbHelper.getNextSchedule();
+      return nextSchedule;
+    } catch (e) {
+      print('Get next schedule error.');
+      print(e);
+    }
+    return null;
   }
 
-  getMissedCheckIns() async {
-    final List<ScheduleLastCheckInObj> lastCheckIns = await widget.helper.checkInDbHelper.getLastCheckIns();
-    final DateTime now = DateTime.now();
-    int missedCheckIns = lastCheckIns.where((lastCheckIn) => lastCheckIn.hasMissedCheckInsUntil(now)).toList().length;
-    setState(() {
-      this.missedCheckIns = missedCheckIns;
-    });
+  Future<int> getMissedCheckIns() async {
+    try {
+      final List<ScheduleLastCheckInObj> lastCheckIns = await widget.helper.checkInDbHelper.getLastCheckIns();
+      final DateTime now = getSameUtcTimeOfNow();
+      int missedCheckIns = lastCheckIns.where((lastCheckIn) => lastCheckIn.hasMissedCheckInsUntil(now)).toList().length;
+      return missedCheckIns;
+    } catch (e) {
+      print('Get missed check ins error.');
+      print(e);
+    }
+    return null;
   }
 
-  getCheckIns() async {
-    final List<Map<String, dynamic>> checkInMaps = await widget.helper.checkInDbHelper.getCheckIn();
-    final List<CheckInObj> checkIns = checkInMaps.map((map) {
-      return CheckInObj.fromDbMap(map);
-    }).toList();
-    setState(() {
-      this.checkIns = checkIns;
-    });
+  Future<List<CheckInObj>> getCheckIns() async {
+    try {
+      final List<Map<String, dynamic>> checkInMaps = await widget.helper.checkInDbHelper.getCheckIn();
+      final List<CheckInObj> checkIns = checkInMaps.map((map) {
+        return CheckInObj.fromDbMap(map);
+      }).toList();
+      return checkIns;
+    } catch (e) {
+      print('Get check ins error.');
+      print(e);
+    }
+    return null;
+  }
+
+  initPage() async {
+    try {
+      final initRes = await Future.wait([
+        getNextSchedule(),
+        getMissedCheckIns(),
+        getCheckIns()
+      ]);
+
+      setState(() {
+        if (initRes[0] != null) {
+          this.nextSchedule = initRes[0];
+        }
+        if (initRes[1] != null) {
+          this.missedCheckIns = initRes[1];
+        }
+        if (initRes[2] != null) {
+          this.checkIns = initRes[2];
+        }
+      });
+    } catch (e) {
+      print('Init page error.');
+      print(e);
+    }
   }
 
   @override
@@ -55,25 +94,25 @@ class _CheckInPageState extends State<CheckInPage> {
     checkIns = [];
     missedCheckIns = 0;
 
-    getNextSchedule();
-    getMissedCheckIns();
-    getCheckIns();
+    initPage();
   }
 
   @override
   Widget build(BuildContext context) {
-    final int numberOfListItems = (nextSchedule != null) ? checkIns.length + 2 : checkIns.length + 1;
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Check Ins'),
       ),
       body: Container(
         child: ListView.builder(
-          itemCount: numberOfListItems,
+          itemCount: checkIns.length + 2,
           itemBuilder: (context, idx) {
             // next time to take medicine
-            if (nextSchedule != null && idx == 0) {
+            if (idx == 0) {
+              if (nextSchedule == null) {
+                return null;
+              }
+
               return Card(
                 child: Column(
                   children: <Widget>[
@@ -88,7 +127,7 @@ class _CheckInPageState extends State<CheckInPage> {
             }
 
             // missed check ins
-            if ((nextSchedule != null && idx == 1) || (nextSchedule == null && idx == 0)) {
+            if (idx == 1) {
               String missedCheckInsText;
               if (missedCheckIns <= 0) {
                 missedCheckInsText = 'No missed check ins!';
