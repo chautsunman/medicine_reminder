@@ -8,18 +8,18 @@ import '../obj/CheckInObj.dart';
 
 import '../utils/DateTimeUtils.dart';
 
-class CheckInPage extends StatefulWidget {
+class CheckInRecord extends StatefulWidget {
   final String title;
 
   final Helper helper;
 
-  CheckInPage({Key key, this.title, this.helper}) : super(key: key);
+  CheckInRecord({Key key, this.title, this.helper}) : super(key: key);
 
   @override
-  _CheckInPageState createState() => _CheckInPageState();
+  _CheckInRecordState createState() => _CheckInRecordState();
 }
 
-class _CheckInPageState extends State<CheckInPage> {
+class _CheckInRecordState extends State<CheckInRecord> {
   List<CheckInObj> checkIns;
   DateScheduleObj nextSchedule;
   int missedCheckIns;
@@ -60,6 +60,10 @@ class _CheckInPageState extends State<CheckInPage> {
       print(e);
     }
     return null;
+  }
+
+  checkIn() {
+    Navigator.pushNamed(context, 'checkin/checkin');
   }
 
   initPage() async {
@@ -154,6 +158,10 @@ class _CheckInPageState extends State<CheckInPage> {
             );
           },
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.add),
+        onPressed: checkIn,
       ),
     );
   }

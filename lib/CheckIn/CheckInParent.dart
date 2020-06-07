@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'CheckInPage.dart';
+import 'CheckInRecord.dart';
+import 'CheckIn.dart';
 
 import '../helper/Helper.dart';
 
@@ -18,14 +19,19 @@ class CheckInParent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Navigator(
-      initialRoute: 'checkin/checkin',
+      initialRoute: 'checkin/checkinRecord',
       onGenerateRoute: (RouteSettings settings) {
         WidgetBuilder builder;
 
         switch (settings.name) {
-          case 'checkin/checkin':
-            builder = (BuildContext context) => CheckInPage(
+          case 'checkin/checkinRecord':
+            builder = (BuildContext context) => CheckInRecord(
               title: title,
+              helper: helper,
+            );
+            break;
+          case 'checkin/checkin':
+            builder = (BuildContext context) => CheckIn(
               helper: helper,
             );
             break;
