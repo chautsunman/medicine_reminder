@@ -11,7 +11,7 @@ class CheckInObj {
   CheckInObj.fromDbMap(Map<String, dynamic> dbMap) : this(
     dbMap['id'],
     dbMap['schedule_group_id'],
-    DateTime.fromMillisecondsSinceEpoch(dbMap['medications_time'], isUtc: true),
+    DateTime.fromMillisecondsSinceEpoch(dbMap['medication_date'], isUtc: true),
     DateTime.fromMillisecondsSinceEpoch(dbMap['check_in_time'], isUtc: true)
   );
 

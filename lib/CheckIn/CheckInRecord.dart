@@ -50,20 +50,23 @@ class _CheckInRecordState extends State<CheckInRecord> {
 
   Future<List<CheckInObj>> getCheckIns() async {
     try {
-      final List<Map<String, dynamic>> checkInMaps = await widget.helper.checkInDbHelper.getCheckIn();
-      final List<CheckInObj> checkIns = checkInMaps.map((map) {
-        return CheckInObj.fromDbMap(map);
-      }).toList();
+      final List<CheckInObj> checkIns = await widget.helper.checkInDbHelper.getCheckIn();
       return checkIns;
     } catch (e) {
       print('Get check ins error.');
       print(e);
     }
-    return null;
+    return [];
   }
 
-  checkIn() {
-    Navigator.pushNamed(context, 'checkin/checkin');
+  checkIn(context) async {
+    final bool checkInRes = await Navigator.pushNamed(context, 'checkin/checkin');
+
+    if (checkInRes != null) {
+      Scaffold.of(context).showSnackBar(SnackBar(
+        content: Text('Check in ${(checkInRes) ? 'success' : 'error'}'),
+      ));
+    }
   }
 
   initPage() async {
@@ -153,7 +156,7 @@ class _CheckInRecordState extends State<CheckInRecord> {
 
             // check in record
             return ListTile(
-              title: Text(checkIns[idx].checkInTime.toString()),
+              title: Text(checkIns[idx - 2].checkInTime.toString()),
               onTap: null,
             );
           },
@@ -161,7 +164,9 @@ class _CheckInRecordState extends State<CheckInRecord> {
       ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
-        onPressed: checkIn,
+        onPressed: () {
+          checkIn(context);
+        },
       ),
     );
   }

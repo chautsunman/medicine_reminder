@@ -1,14 +1,48 @@
 import 'package:sqflite/sqflite.dart';
 
+import '../obj/ScheduleGroupObj.dart';
 import '../obj/ScheduleLastCheckInObj.dart';
+import '../obj/CheckInObj.dart';
+
+import '../utils/DateTimeUtils.dart';
 
 class CheckInDbHelper {
   final Database db;
 
   CheckInDbHelper(this.db);
 
-  getCheckIn() async {
-    return await db.query('check_ins');
+  Future<bool> checkIn(DateTime checkInDate, ScheduleGroupObj scheduleObj) async {
+    final int numberOfInsertedRecords = await db.insert('check_ins', {
+      'schedule_group_id': scheduleObj.id,
+      'medication_date': getUtcDateStartFromLocalDate(checkInDate).millisecondsSinceEpoch,
+      'check_in_time': getSameUtcTimeOfNow().millisecondsSinceEpoch
+    });
+
+    return numberOfInsertedRecords > 0;
+  }
+
+  Future<List<CheckInObj>> getDateCheckIns(DateTime date) async {
+    final List<Map<String, dynamic>> resMaps = await db.query(
+      'check_ins',
+      where: 'medication_date = ?',
+      whereArgs: [getUtcDateStartFromLocalDate(date).millisecondsSinceEpoch]
+    );
+
+    if (resMaps == null || resMaps.length == 0) {
+      return [];
+    }
+
+    return resMaps.map((resMap) => CheckInObj.fromDbMap(resMap)).toList();
+  }
+
+  Future<List<CheckInObj>> getCheckIn() async {
+    final List<Map<String, dynamic>> resMaps = await db.query('check_ins');
+
+    if (resMaps == null || resMaps.length == 0) {
+      return [];
+    }
+
+    return resMaps.map((resMap) => CheckInObj.fromDbMap(resMap)).toList();
   }
 
   Future<List<ScheduleLastCheckInObj>> getLastCheckIns() async {

@@ -21,25 +21,27 @@ class CheckInParent extends StatelessWidget {
     return Navigator(
       initialRoute: 'checkin/checkinRecord',
       onGenerateRoute: (RouteSettings settings) {
-        WidgetBuilder builder;
-
         switch (settings.name) {
           case 'checkin/checkinRecord':
-            builder = (BuildContext context) => CheckInRecord(
-              title: title,
-              helper: helper,
+            return MaterialPageRoute(
+              builder: (BuildContext context) => CheckInRecord(
+                title: title,
+                helper: helper,
+              ),
+              settings: settings
             );
             break;
           case 'checkin/checkin':
-            builder = (BuildContext context) => CheckIn(
-              helper: helper,
+            return MaterialPageRoute<bool>(
+              builder: (BuildContext context) => CheckIn(
+                helper: helper,
+              ),
+              settings: settings
             );
             break;
           default:
             throw Exception('Invalid check in page route: ${settings.name}');
         }
-
-        return MaterialPageRoute(builder: builder, settings: settings);
       },
     );
   }
