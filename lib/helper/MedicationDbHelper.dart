@@ -6,6 +6,7 @@ import '../obj/ScheduleKey.dart';
 import '../obj/ScheduleGroupObj.dart';
 import '../obj/ScheduleMedicationObj.dart';
 import '../obj/DateScheduleObj.dart';
+import '../obj/DateSchedulesObj.dart';
 
 import '../utils/DateTimeUtils.dart';
 
@@ -257,5 +258,35 @@ class MedicationDbHelper {
       scheduleGroupId,
       medicationsCount
     );
+  }
+
+  Future<List<DateSchedulesObj>> getDateSchedules(DateTime date) async {
+    final int day = date.weekday % 7;
+
+    List<Map<String, dynamic>> resMaps = await db.rawQuery(
+      '''
+        SELECT
+        schedule_group.id AS schedule_group_id,
+        schedule_group.schedule_day AS schedule_group_schedule_day,
+        schedule_group.schedule_time AS schedule_group_schedule_time,
+        medication.id AS medication_id,
+        medication.name AS medication_name
+        FROM schedule_group
+        INNER JOIN schedule_medication ON schedule_medication.schedule_group_id = schedule_group.id
+        INNER JOIN medication ON medication.id = schedule_medication.medication_id
+        WHERE
+        schedule_group.schedule_day = ?
+        AND schedule_group.active = 1
+        AND medication.active = 1
+        ORDER BY schedule_group.schedule_time ASC
+      ''',
+      [day]
+    );
+
+    if (resMaps == null) {
+      return [];
+    }
+
+    return DateSchedulesObj.groupDateSchedulesFromDbMap(resMaps);
   }
 }

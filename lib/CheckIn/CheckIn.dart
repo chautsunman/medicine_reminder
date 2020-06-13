@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:intl/intl.dart';
 
+import '../obj/DateSchedulesObj.dart';
+
 import '../helper/Helper.dart';
 
 import '../utils/DateTimeUtils.dart';
@@ -17,6 +19,8 @@ class CheckIn extends StatefulWidget {
 
 class _CheckInState extends State<CheckIn> {
   DateTime checkInDate;
+  List<DateSchedulesObj> dateSchedules;
+  DateSchedulesObj selectedSchedule;
 
   editCheckInDate(BuildContext context) async {
     DateTime newCheckInDate = await showDatePicker(
@@ -27,10 +31,25 @@ class _CheckInState extends State<CheckIn> {
     );
 
     if (newCheckInDate != null) {
+      newCheckInDate = getUtcDateStartFromLocalDate(newCheckInDate);
+
       this.setState(() {
-        this.checkInDate = getUtcDateStartFromLocalDate(newCheckInDate);
+        this.checkInDate = newCheckInDate;
       });
+
+      getDateSchedules(newCheckInDate);
     }
+  }
+
+  getDateSchedules(DateTime date) async {
+    List<DateSchedulesObj> dateSchedules = await widget.helper.medicationDbHelper.getDateSchedules(date);
+
+    setState(() {
+      this.dateSchedules = dateSchedules;
+      if (dateSchedules.length > 0) {
+        this.selectedSchedule = dateSchedules[0];
+      }
+    });
   }
 
   onSave(BuildContext context) {
@@ -42,6 +61,9 @@ class _CheckInState extends State<CheckIn> {
     super.initState();
 
     checkInDate = getUtcDateStartFromLocalDate(DateTime.now());
+    dateSchedules = [];
+
+    getDateSchedules(checkInDate);
   }
 
   @override
@@ -61,11 +83,30 @@ class _CheckInState extends State<CheckIn> {
       body: Container(
         child: ListView(
           children: <Widget>[
-            OutlineButton(
-              child: Text(DateFormat.yMMMEd().format(checkInDate)),
-              onPressed: () {
-                editCheckInDate(context);
-              },
+            Row(
+              children: <Widget>[
+                OutlineButton(
+                  child: Text(DateFormat.yMMMEd().format(checkInDate)),
+                  onPressed: () {
+                    editCheckInDate(context);
+                  },
+                ),
+                Spacer(),
+                DropdownButton(
+                  value: selectedSchedule,
+                  onChanged: (DateSchedulesObj selectedSchedule) {
+                    setState(() {
+                      this.selectedSchedule = selectedSchedule;
+                    });
+                  },
+                  items: dateSchedules.map((dateSchedule) {
+                    return DropdownMenuItem<DateSchedulesObj>(
+                      value: dateSchedule,
+                      child: Text('${DateFormat.Hm().format(DateTime.fromMillisecondsSinceEpoch(dateSchedule.scheduleGroup.time, isUtc: true))} (${dateSchedule.medications.length} medications)'),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
           ],
         ),

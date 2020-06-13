@@ -5,10 +5,10 @@ class MedicationObj {
 
   MedicationObj({this.id, this.name, this.photoFileName});
 
-  MedicationObj.fromDbMap(Map<String, dynamic> map) : this(
-    id: map['id'],
-    name: map['name'],
-    photoFileName: map['photo_file_name'],
+  MedicationObj.fromDbMap(Map<String, dynamic> map, {String keyPrefix = ''}) : this(
+    id: map.containsKey('${keyPrefix}id') ? map['${keyPrefix}id'] : null,
+    name: map.containsKey('${keyPrefix}name') ? map['${keyPrefix}name'] : null,
+    photoFileName: map.containsKey('${keyPrefix}photo_file_name') ? map['${keyPrefix}photo_file_name'] : null,
   );
 
   Map<String, dynamic> toMap() {
