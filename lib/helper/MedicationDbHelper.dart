@@ -289,4 +289,20 @@ class MedicationDbHelper {
 
     return DateSchedulesObj.groupDateSchedulesFromDbMap(resMaps);
   }
+
+  Future<DateTime> getLastScheduleChange() async {
+    final List<Map<String, dynamic>> resMaps = await db.rawQuery(
+      '''
+        SELECT MAX(active_time) AS last_schedule_group_active_time
+        FROM schedule_group
+        WHERE active = 1
+      '''
+    );
+
+    if (resMaps == null || resMaps.length == 0) {
+      return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+    }
+
+    return DateTime.fromMillisecondsSinceEpoch(resMaps[0]['last_schedule_group_active_time'], isUtc: true);
+  }
 }

@@ -24,22 +24,26 @@ class _CheckInState extends State<CheckIn> {
   List<DateSchedulesObj> dateSchedules;
   DateSchedulesObj selectedSchedule;
 
+  DateTime lastScheduleChangeTime;
+
+  bool loading;
+
   editCheckInDate(BuildContext context) async {
     DateTime newCheckInDate = await showDatePicker(
       context: context,
       initialDate: checkInDate,
-      firstDate: getUtcDateStartFromLocalDate(DateTime.fromMillisecondsSinceEpoch(0)),
+      firstDate: lastScheduleChangeTime,
       lastDate: getUtcDateStartFromLocalDate(DateTime.now()),
     );
 
     if (newCheckInDate != null) {
       newCheckInDate = getUtcDateStartFromLocalDate(newCheckInDate);
 
-      getDateSchedules(newCheckInDate);
+      updateDateSchedules(newCheckInDate);
     }
   }
 
-  getDateSchedules(DateTime date) async {
+  Future<void> updateDateSchedules(DateTime date) async {
     List<DateSchedulesObj> dateSchedules = await widget.helper.medicationDbHelper.getDateSchedules(date);
     List<CheckInObj> dateCheckIns = await widget.helper.checkInDbHelper.getDateCheckIns(date);
     dateSchedules = getUnCheckedInSchedules(dateSchedules, dateCheckIns);
@@ -59,23 +63,93 @@ class _CheckInState extends State<CheckIn> {
     Navigator.pop(context, checkInRes);
   }
 
+  init(DateTime checkInDate) async {
+    List<dynamic> initRes;
+
+    try {
+      initRes = await Future.wait([
+        updateDateSchedules(checkInDate),
+        widget.helper.medicationDbHelper.getLastScheduleChange()
+      ]);
+    } catch (e) {
+      print('Init error');
+      print(e);
+      return;
+    }
+
+    print('Check in page initialized');
+
+    setState(() {
+      this.lastScheduleChangeTime = initRes[1];
+      this.loading = false;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
 
+    loading = true;
+
     checkInDate = getUtcDateStartFromLocalDate(DateTime.now());
     dateSchedules = [];
+    lastScheduleChangeTime = checkInDate;
 
-    getDateSchedules(checkInDate);
+    init(checkInDate);
   }
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> selectedScheduleMedicationsComp = [];
-    if (selectedSchedule != null) {
-      selectedScheduleMedicationsComp = selectedSchedule.medications.map((medication) {
-        return Text(medication.name);
-      }).toList();
+    var content;
+
+    if (!loading) {
+      List<Widget> selectedScheduleMedicationsComp = [];
+      if (selectedSchedule != null) {
+        selectedScheduleMedicationsComp = selectedSchedule.medications.map((medication) {
+          return Text(medication.name);
+        }).toList();
+      }
+
+      content = ListView(
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              OutlineButton(
+                child: Text(DateFormat.yMMMEd().format(checkInDate)),
+                onPressed: () {
+                  editCheckInDate(context);
+                },
+              ),
+              Spacer(),
+              DropdownButton(
+                value: selectedSchedule,
+                onChanged: (DateSchedulesObj selectedSchedule) {
+                  setState(() {
+                    this.selectedSchedule = selectedSchedule;
+                  });
+                },
+                items: dateSchedules.map((dateSchedule) {
+                  return DropdownMenuItem<DateSchedulesObj>(
+                    value: dateSchedule,
+                    child: Text('${DateFormat.Hm().format(DateTime.fromMillisecondsSinceEpoch(dateSchedule.scheduleGroup.time, isUtc: true))} (${dateSchedule.medications.length} medications)'),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+          Column(
+            children: <Widget>[
+              Text('Medications to take:'),
+              ...selectedScheduleMedicationsComp
+            ],
+            crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+        ],
+      );
+    } else {
+      content = Center(
+        child: CircularProgressIndicator(),
+      );
     }
 
     return Scaffold(
@@ -91,42 +165,7 @@ class _CheckInState extends State<CheckIn> {
         ],
       ),
       body: Container(
-        child: ListView(
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                OutlineButton(
-                  child: Text(DateFormat.yMMMEd().format(checkInDate)),
-                  onPressed: () {
-                    editCheckInDate(context);
-                  },
-                ),
-                Spacer(),
-                DropdownButton(
-                  value: selectedSchedule,
-                  onChanged: (DateSchedulesObj selectedSchedule) {
-                    setState(() {
-                      this.selectedSchedule = selectedSchedule;
-                    });
-                  },
-                  items: dateSchedules.map((dateSchedule) {
-                    return DropdownMenuItem<DateSchedulesObj>(
-                      value: dateSchedule,
-                      child: Text('${DateFormat.Hm().format(DateTime.fromMillisecondsSinceEpoch(dateSchedule.scheduleGroup.time, isUtc: true))} (${dateSchedule.medications.length} medications)'),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-            Column(
-              children: <Widget>[
-                Text('Medications to take:'),
-                ...selectedScheduleMedicationsComp
-              ],
-              crossAxisAlignment: CrossAxisAlignment.start,
-            ),
-          ],
-        ),
+        child: content,
         padding: EdgeInsets.all(16),
       ),
     );

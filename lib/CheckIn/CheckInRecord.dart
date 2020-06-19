@@ -77,6 +77,8 @@ class _CheckInRecordState extends State<CheckInRecord> {
         getCheckIns()
       ]);
 
+      print('Check in record page initialized');
+
       setState(() {
         if (initRes[0] != null) {
           this.nextSchedule = initRes[0];
