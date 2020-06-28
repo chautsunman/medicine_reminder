@@ -4,7 +4,7 @@ import '../helper/NotificationHelper.dart';
 import '../helper/Helper.dart';
 
 import '../obj/MedicationObj.dart';
-import '../obj/ScheduleKey.dart';
+import '../obj/ScheduleGroupObj.dart';
 
 class ReminderPage extends StatefulWidget {
   final String title;
@@ -39,7 +39,7 @@ class _ReminderPageState extends State<ReminderPage> {
       WHERE schedule_group.active = 1 AND medication.active = 1
     ''');
 
-    final Map<ScheduleKey, List<Map<String, dynamic>>> groupedSchedules = groupSchedules(scheduleRecords);
+    final Map<ScheduleGroupObj, List<MedicationObj>> groupedSchedules = groupSchedules(scheduleRecords);
 
     await widget.helper.notification.clearNotifications();
 

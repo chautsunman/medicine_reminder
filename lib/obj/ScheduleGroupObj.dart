@@ -14,9 +14,13 @@ class ScheduleGroupObj {
     (dbMap.containsKey('${keyPrefix}id')) ? dbMap['${keyPrefix}id'] : null,
     (dbMap.containsKey('${keyPrefix}schedule_day')) ? dbMap['${keyPrefix}schedule_day'] : null,
     (dbMap.containsKey('${keyPrefix}schedule_time')) ? dbMap['${keyPrefix}schedule_time'] : null,
-    (dbMap.containsKey('${keyPrefix}active_time')) ? dbMap['${keyPrefix}active_time'] : null,
-    (dbMap.containsKey('${keyPrefix}non_active_time')) ? dbMap['${keyPrefix}non_active_time'] : null,
-    (dbMap.containsKey('${keyPrefix}active')) ? dbMap['${keyPrefix}active'] : null
+    (dbMap.containsKey('${keyPrefix}active_time') && dbMap['${keyPrefix}active_time'] != null)
+        ? DateTime.fromMillisecondsSinceEpoch(dbMap['${keyPrefix}active_time'], isUtc: true)
+        : null,
+    (dbMap.containsKey('${keyPrefix}non_active_time') && dbMap['${keyPrefix}non_active_time'] != null)
+        ? DateTime.fromMillisecondsSinceEpoch(dbMap['${keyPrefix}non_active_time'], isUtc: true)
+        : null,
+    (dbMap.containsKey('${keyPrefix}active')) ? dbMap['${keyPrefix}active'] == 1 : null
   );
 
   Map<String, dynamic> toDbMap() {

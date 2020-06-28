@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 
-import '../obj/ScheduleKey.dart';
+import '../obj/ScheduleGroupObj.dart';
+import '../obj/MedicationObj.dart';
 
 final Map<int, Day> dayMap = {
   0: Day.Sunday,
@@ -23,7 +26,7 @@ class NotificationHelper {
     print('Cleared all old notifications');
   }
 
-  addNotifications(Map<ScheduleKey, List<Map<String, dynamic>>> groupedSchedules) async {
+  addNotifications(Map<ScheduleGroupObj, List<MedicationObj>> groupedSchedules) async {
     List<Future<dynamic>> addNotificationFutures = [];
 
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
@@ -37,22 +40,24 @@ class NotificationHelper {
     final platformChannelSpecifics = NotificationDetails(androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
 
     int notificationIdx = 0;
-    groupedSchedules.forEach((scheduleKey, medications) {
-      if (scheduleKey.valid()) {
-        final DateTime timeDateTime = scheduleKey.getTime();
-        final Time time = Time(timeDateTime.hour, timeDateTime.minute, timeDateTime.second);
+    groupedSchedules.forEach((scheduleGroup, medications) {
+      final DateTime timeDateTime = DateTime.fromMillisecondsSinceEpoch(scheduleGroup.time, isUtc: true);
+      final Time time = Time(timeDateTime.hour, timeDateTime.minute, timeDateTime.second);
 
-        addNotificationFutures.add(notification.showWeeklyAtDayAndTime(
-          notificationIdx,
-          'Time to take medication.',
-          '${medications.length} medications at ${DateFormat.Hm().format(timeDateTime)}.',
-          dayMap[scheduleKey.day],
-          time,
-          platformChannelSpecifics
-        ));
-        notificationIdx++;
-        print('Added notification at day ${scheduleKey.day} ${DateFormat.Hm().format(timeDateTime)} to take ${medications.length} medications.');
-      }
+      addNotificationFutures.add(notification.showWeeklyAtDayAndTime(
+        notificationIdx,
+        'Time to take medication.',
+        '${medications.length} medications at ${DateFormat.Hm().format(timeDateTime)}.',
+        dayMap[scheduleGroup.day],
+        time,
+        platformChannelSpecifics,
+        payload: jsonEncode({
+          'type': 'checkin',
+          'scheduleGroupId': scheduleGroup.id,
+        }),
+      ));
+      notificationIdx++;
+      print('Added notification at day ${scheduleGroup.day} ${DateFormat.Hm().format(timeDateTime)} to take ${medications.length} medications.');
     });
 
     print('Added $notificationIdx total notifications.');
@@ -61,14 +66,14 @@ class NotificationHelper {
   }
 }
 
-Map<ScheduleKey, List<Map<String, dynamic>>> groupSchedules(List<Map<String, dynamic>> schedulesDbMap) {
-  Map<ScheduleKey, List<Map<String, dynamic>>> groupedSchedules = {};
+Map<ScheduleGroupObj, List<MedicationObj>> groupSchedules(List<Map<String, dynamic>> schedulesDbMap) {
+  Map<ScheduleGroupObj, List<MedicationObj>> groupedSchedules = {};
   schedulesDbMap.forEach((scheduleDbMap) {
-    final ScheduleKey scheduleKey = ScheduleKey(scheduleDbMap['schedule_day'], scheduleDbMap['schedule_time']);
-    if (!groupedSchedules.containsKey(scheduleKey)) {
-      groupedSchedules[scheduleKey] = [];
+    final ScheduleGroupObj scheduleGroup = ScheduleGroupObj.fromDbMap(scheduleDbMap);
+    if (!groupedSchedules.containsKey(scheduleGroup)) {
+      groupedSchedules[scheduleGroup] = [];
     }
-    groupedSchedules[scheduleKey].add(scheduleDbMap);
+    groupedSchedules[scheduleGroup].add(MedicationObj.fromDbMap(scheduleDbMap));
   });
   return groupedSchedules;
 }

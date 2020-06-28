@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -39,12 +40,25 @@ class _MedicineReminderAppState extends State<MedicineReminderApp> {
     var initializationSettingsAndroid = AndroidInitializationSettings('icon');
     // var initializationSettingsIOS = IOSInitializationSettings(onDidReceiveLocalNotification: onDidReceiveLocalNotification);
     var initializationSettings = InitializationSettings(initializationSettingsAndroid, null);
-    final bool initRes = await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    final bool initRes = await flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onSelectNotification: onNotificationOpen,
+    );
     if (initRes) {
       print('Notifications initialized.');
       return NotificationHelper(flutterLocalNotificationsPlugin);
     }
     return null;
+  }
+
+  onNotificationOpen(String payload) async {
+    print('App opened from notification, payload: $payload');
+
+    if (payload == null) {
+      return;
+    }
+
+    Map<String, dynamic> data = jsonDecode(payload);
   }
 
   init() async {
